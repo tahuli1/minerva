@@ -87,7 +87,5 @@ If a change might violate these rules, stop and point it out instead of doing it
 cmake -S . -B build
 cmake --build build --config Release
 ctest --test-dir build -C Release
-build\apps\cli\Release\ukefx_cli.exe   # mic -> headphones pass-through, Ctrl+C to stop
 ```
-Generator: Visual Studio 18 2026 (CMake default on this machine). RtAudio is built static, WASAPI only.
 (Update this section as the project evolves.)
