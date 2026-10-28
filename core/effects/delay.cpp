@@ -13,6 +13,8 @@ void Delay::prepare(int sampleRate, int /*maxBlockSize*/) {
     buffer_.assign(std::bit_ceil(needed), 0.0f);
     mask_ = buffer_.size() - 1;
     write_ = 0;
+    feedbackSmoothed_.reset(sampleRate, kParamRampSeconds, feedback_.load(std::memory_order_relaxed));
+    mixSmoothed_.reset(sampleRate, kParamRampSeconds, mix_.load(std::memory_order_relaxed));
 }
 
 void Delay::setFeedback(float feedback) {
@@ -26,8 +28,8 @@ void Delay::setMix(float mix) {
 }
 
 void Delay::process(const float* in, float* out, int n) {
-    const float feedback = feedback_.load(std::memory_order_relaxed);
-    const float mix = mix_.load(std::memory_order_relaxed);
+    feedbackSmoothed_.setTarget(feedback_.load(std::memory_order_relaxed));
+    mixSmoothed_.setTarget(mix_.load(std::memory_order_relaxed));
     const float timeMs = timeMs_.load(std::memory_order_relaxed);
 
     // At least 1 sample: reading the slot we are about to write would return audio
@@ -37,6 +39,8 @@ void Delay::process(const float* in, float* out, int n) {
         1, mask_);
 
     for (int i = 0; i < n; ++i) {
+        const float feedback = feedbackSmoothed_.next();
+        const float mix = mixSmoothed_.next();
         const float dry = in[i]; // Read before writing out[i]: in and out may alias.
         const float wet = buffer_[(write_ - delay) & mask_];
         buffer_[write_] = dry + feedback * wet;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "dsp/smoothed_value.h"
 #include "effect.h"
 
 #include <atomic>
@@ -14,7 +15,8 @@ public:
     void prepare(int sampleRate, int maxBlockSize) override;
     void process(const float* in, float* out, int n) override;
 
-    // Safe to call from any thread while audio runs.
+    // Safe to call from any thread while audio runs. Changes glide over
+    // kParamRampSeconds; prepare() starts from the values set so far, with no glide.
     void setDrive(float drive) { drive_.store(drive, std::memory_order_relaxed); }
     void setLevel(float level) { level_.store(level, std::memory_order_relaxed); }
 
@@ -23,6 +25,10 @@ private:
     // Relaxed is enough: each is an independent value, nothing is published through it.
     std::atomic<float> drive_{1.0f};
     std::atomic<float> level_{1.0f};
+
+    // Audio-thread copies that glide towards the atomics' values.
+    SmoothedValue driveSmoothed_;
+    SmoothedValue levelSmoothed_;
 
     static_assert(std::atomic<float>::is_always_lock_free);
 };
