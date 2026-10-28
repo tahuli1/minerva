@@ -1,5 +1,7 @@
 #include "rtaudio/rtaudio_backend.h"
 
+#include "denormals.h"
+
 #include <RtAudio.h>
 
 #include <algorithm>
@@ -66,6 +68,10 @@ void RtAudioBackend::stop() {
 
 int RtAudioBackend::audioCallback(void* out, void* in, unsigned int nFrames, double /*streamTime*/,
                                   unsigned int status, void* self) {
+    // Set per callback rather than once: RtAudio owns this thread, and this way we
+    // don't depend on nothing else having changed MXCSR in between. Costs a few cycles.
+    ScopedNoDenormals noDenormals;
+
     auto* backend = static_cast<RtAudioBackend*>(self);
     auto* dst = static_cast<float*>(out);
     const unsigned int channels = backend->outChannels_;

@@ -1,0 +1,24 @@
+# Builds everything and runs the unit tests on every PR and every push to main.
+# The runner has no sound card; that's fine, because the tests exercise core/
+# offline and never open an audio device.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
