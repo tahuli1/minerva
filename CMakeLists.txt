@@ -31,3 +31,4 @@ FetchContent_Declare(rtaudio
 FetchContent_MakeAvailable(rtaudio)
 
 add_subdirectory(backends)
+add_subdirectory(apps/cli)
