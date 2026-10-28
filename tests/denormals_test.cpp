@@ -1,5 +1,5 @@
-#include "delay.h"
 #include "denormals.h"
+#include "effects/delay.h"
 
 #include <gtest/gtest.h>
 
