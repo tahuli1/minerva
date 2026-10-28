@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cmath>
+#include <vector>
 
 namespace {
 
@@ -11,9 +12,9 @@ constexpr int kSampleRate = 48000;
 constexpr int kBlock = 8;
 
 void configure(ukefx::Distortion& d, float drive, float level) {
-    d.prepare(kSampleRate, kBlock);
     d.setDrive(drive);
     d.setLevel(level);
+    d.prepare(kSampleRate, kBlock);
 }
 
 } // namespace
@@ -70,4 +71,20 @@ TEST(Distortion, InPlaceMatchesOutOfPlace) {
     d.process(in.data(), expected.data(), kBlock);
     d.process(in.data(), in.data(), kBlock);
     for (int i = 0; i < kBlock; ++i) EXPECT_FLOAT_EQ(in[i], expected[i]);
+}
+
+TEST(Distortion, DriveChangeGlidesInsteadOfJumping) {
+    // Without smoothing, jumping from drive 1 to 20 on a steady 0.05 input would make
+    // the output leap from ~0.05 to ~0.76 in one sample: an audible click.
+    ukefx::Distortion d;
+    configure(d, 1.0f, 1.0f);
+    std::vector<float> in(2000, 0.05f), out(2000);
+    d.process(in.data(), out.data(), 100);
+    d.setDrive(20.0f);
+    d.process(in.data() + 100, out.data() + 100, 1900);
+
+    for (int i = 100; i < 2000; ++i)
+        EXPECT_LT(std::abs(out[i] - out[i - 1]), 0.002f) << "jump at " << i;
+    // 20 ms at 48 kHz is 960 samples; after that the new drive is fully applied.
+    EXPECT_FLOAT_EQ(out[100 + 960], std::tanh(20.0f * 0.05f));
 }
