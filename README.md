@@ -37,9 +37,19 @@ build\apps\cli\Release\ukefx_cli.exe delay
 build\apps\cli\Release\ukefx_cli.exe delay distortion
 ```
 
+While it runs, change parameters from the keyboard (lowercase lowers, uppercase raises):
+
+| Key | Parameter |
+|---|---|
+| `d` / `D` | distortion drive |
+| `f` / `F` | delay feedback |
+| `m` / `M` | delay mix |
+| `q` | quit (Ctrl+C works too) |
+
+Changes glide over 20 ms, so they don't click.
+
 Use headphones, and turn the volume down before the first run: with speakers, the
-microphone will pick up the output and feed back. The app prints the devices and
-stream settings it got, then runs until you press Ctrl+C.
+microphone will pick up the output and feed back.
 
 ## Test
 

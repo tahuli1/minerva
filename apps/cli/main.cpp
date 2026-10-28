@@ -2,9 +2,10 @@
 #define NOMINMAX
 #include <windows.h>
 
+#include <conio.h>
+
+#include "controls.h"
 #include "effect_chain.h"
-#include "effects/delay.h"
-#include "effects/distortion.h"
 #include "rtaudio/rtaudio_backend.h"
 
 #include <atomic>
@@ -16,12 +17,11 @@ namespace {
 
 std::atomic<bool> g_quit{false};
 
-// Windows runs console control handlers on their own thread (not inside a signal
-// context), so using an atomic's wait/notify here is safe.
+// Windows runs console control handlers on their own thread, so a plain atomic
+// store is all that's needed; the main loop sees it within one poll.
 BOOL WINAPI onConsoleCtrl(DWORD type) {
     if (type != CTRL_C_EVENT && type != CTRL_BREAK_EVENT) return FALSE;
     g_quit.store(true);
-    g_quit.notify_one();
     return TRUE; // Handled: don't let Windows kill the process before we close the stream.
 }
 
@@ -30,15 +30,35 @@ void runEffect(const float* in, float* out, int n, void* user) {
     static_cast<ukefx::Effect*>(user)->process(in, out, n);
 }
 
-struct Effects {
-    ukefx::Distortion distortion;
-    ukefx::Delay delay;
-};
+// Main thread, not RT: polling the keyboard 50 times a second costs nothing and
+// keeps the loop simple. Every change goes to the effects through their atomics.
+void runControlLoop(cli::Settings& settings, cli::Effects& effects) {
+    cli::printHelp();
+    cli::printSettings(settings);
+    while (!g_quit.load()) {
+        if (!_kbhit()) {
+            Sleep(20);
+            continue;
+        }
+        const int key = _getch();
+        if (key == 0 || key == 0xE0) { // arrow/function keys arrive as two codes: skip both
+            _getch();
+            continue;
+        }
+        if (key == 'q' || key == 'Q') break;
+        if (cli::handleKey(key, settings)) {
+            cli::apply(settings, effects);
+            cli::printSettings(settings);
+        }
+    }
+    std::printf("\n");
+}
 
 // Not RT. Adds the effects named on the command line to the chain, in order.
 // Each effect object can appear once: adding it twice would make both slots share
 // one set of state (e.g. one delay buffer written twice per sample).
-bool buildChain(int argc, char** argv, Effects& effects, ukefx::EffectChain& chain, std::string& names) {
+bool buildChain(int argc, char** argv, cli::Effects& effects, ukefx::EffectChain& chain,
+                std::string& names) {
     bool used[2] = {false, false};
     for (int i = 1; i < argc; ++i) {
         const bool isDistortion = std::strcmp(argv[i], "distortion") == 0;
@@ -66,10 +86,11 @@ bool buildChain(int argc, char** argv, Effects& effects, ukefx::EffectChain& cha
 int main(int argc, char** argv) {
     SetConsoleCtrlHandler(onConsoleCtrl, TRUE);
 
-    Effects effects;
-    effects.distortion.setDrive(4.0f);  // Warm overdrive rather than fuzz.
-    effects.distortion.setLevel(0.3f);  // tanh saturates near full scale; keep headphones safe.
-                                        // The delay keeps its defaults: a musical echo, see delay.h.
+    cli::Effects effects;
+    cli::Settings settings;
+    cli::apply(settings, effects);     // Before prepare(), so the smoothers start at these values.
+    effects.distortion.setLevel(0.3f); // tanh saturates near full scale; keep headphones safe.
+
     ukefx::EffectChain chain;
     std::string names;
     char* defaultArgs[] = {argv[0], const_cast<char*>("distortion"), const_cast<char*>("delay")};
@@ -103,9 +124,9 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "Failed to start audio stream: %s\n", backend.lastError().c_str());
         return 1;
     }
-    std::printf("Running. Press Ctrl+C to stop.\n");
+    std::printf("Running. Press q or Ctrl+C to stop.\n");
 
-    g_quit.wait(false); // Blocks without polling until the Ctrl+C handler flips the flag.
+    runControlLoop(settings, effects);
 
     backend.stop();
     std::printf("Stopped. xruns: %llu\n", static_cast<unsigned long long>(backend.xrunCount()));
