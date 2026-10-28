@@ -2,11 +2,12 @@
 #define NOMINMAX
 #include <windows.h>
 
+#include "distortion.h"
 #include "rtaudio/rtaudio_backend.h"
 
-#include <algorithm>
 #include <atomic>
 #include <cstdio>
+#include <cstdlib>
 
 namespace {
 
@@ -21,18 +22,26 @@ BOOL WINAPI onConsoleCtrl(DWORD type) {
     return TRUE; // Handled: don't let Windows kill the process before we close the stream.
 }
 
-// Audio thread. Milestone 1 is a plain pass-through; the effect chain goes here later.
-void passThrough(const float* in, float* out, int n, void* /*user*/) {
-    std::copy_n(in, n, out);
+// Audio thread. `user` is the effect to run; a virtual call has a small, fixed cost.
+void runEffect(const float* in, float* out, int n, void* user) {
+    static_cast<ukefx::Effect*>(user)->process(in, out, n);
 }
 
 } // namespace
 
-int main() {
+// Usage: ukefx_cli [drive]   (default drive 10; 1 is almost clean)
+int main(int argc, char** argv) {
     SetConsoleCtrlHandler(onConsoleCtrl, TRUE);
 
+    const float drive = argc > 1 ? std::strtof(argv[1], nullptr) : 10.0f;
+    ukefx::Distortion distortion;
+    distortion.setDrive(drive);
+    distortion.setLevel(0.3f); // tanh saturates near full scale; keep headphones safe.
+
+    // Declared after the effect so it is destroyed first: the stream stops
+    // before the effect it calls into goes away.
     ukefx::RtAudioBackend backend;
-    if (!backend.open({.sampleRate = 48000, .bufferFrames = 128}, passThrough, nullptr)) {
+    if (!backend.open({.sampleRate = 48000, .bufferFrames = 128}, runEffect, &distortion)) {
         std::fprintf(stderr, "Failed to open audio stream: %s\n", backend.lastError().c_str());
         return 1;
     }
@@ -45,6 +54,10 @@ int main() {
     std::printf("Buffer size:   %u frames (%.2f ms)\n", info.bufferFrames,
                 1000.0 * info.bufferFrames / info.sampleRate);
     std::printf("Reported stream latency: %ld frames\n", info.latencyFrames);
+    std::printf("Effect:        distortion, drive %.1f\n", drive);
+
+    // Prepare with the buffer size the device actually gave us, before audio starts.
+    distortion.prepare(static_cast<int>(info.sampleRate), static_cast<int>(info.bufferFrames));
 
     if (!backend.start()) {
         std::fprintf(stderr, "Failed to start audio stream: %s\n", backend.lastError().c_str());
