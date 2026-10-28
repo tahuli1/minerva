@@ -27,9 +27,12 @@ cmake --build build --config Release
 
 ```
 build\apps\cli\Release\ukefx_cli.exe [drive]
+build\apps\cli\Release\ukefx_cli.exe delay
 ```
 
-`drive` sets how hard the distortion is pushed: 1 is almost clean, the default is 10.
+The first form runs the distortion; `drive` sets how hard it is pushed (1 is almost
+clean, the default is 10). The second runs a 350 ms echo instead. For now only one
+effect runs at a time.
 
 Use headphones, and turn the volume down before the first run: with speakers, the
 microphone will pick up the output and feed back. The app prints the devices and
