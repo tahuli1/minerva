@@ -3,9 +3,13 @@ project(ukefx LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# Plain ISO C++20, not GNU dialects (-std=gnu++20 on GCC/Clang). core/ has to stay
+# portable to Linux and STM32 toolchains, so compiler extensions must not sneak in.
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Warnings for our own targets only; third-party code is built with its defaults.
+# Interface target that carries only compile flags, no code. Linking it applies the
+# flags to that target alone, so our code gets strict warnings while third-party
+# code (RtAudio) is built with its own defaults instead of flooding the build log.
 add_library(ukefx_warnings INTERFACE)
 if(MSVC)
     target_compile_options(ukefx_warnings INTERFACE /W4 /permissive- /utf-8)
