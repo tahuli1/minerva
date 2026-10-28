@@ -26,13 +26,16 @@ cmake --build build --config Release
 ## Run
 
 ```
-build\apps\cli\Release\ukefx_cli.exe [drive]
-build\apps\cli\Release\ukefx_cli.exe delay
+build\apps\cli\Release\ukefx_cli.exe [effect ...]
 ```
 
-The first form runs the distortion; `drive` sets how hard it is pushed (1 is almost
-clean, the default is 10). The second runs a 350 ms echo instead. For now only one
-effect runs at a time.
+Effects run in the order given. Known effects: `distortion` (warm overdrive) and
+`delay` (350 ms echo). With no arguments it runs `distortion delay`. Examples:
+
+```
+build\apps\cli\Release\ukefx_cli.exe delay
+build\apps\cli\Release\ukefx_cli.exe delay distortion
+```
 
 Use headphones, and turn the volume down before the first run: with speakers, the
 microphone will pick up the output and feed back. The app prints the devices and

@@ -4,12 +4,13 @@
 
 #include "delay.h"
 #include "distortion.h"
+#include "effect_chain.h"
 #include "rtaudio/rtaudio_backend.h"
 
 #include <atomic>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
+#include <string>
 
 namespace {
 
@@ -29,28 +30,57 @@ void runEffect(const float* in, float* out, int n, void* user) {
     static_cast<ukefx::Effect*>(user)->process(in, out, n);
 }
 
+struct Effects {
+    ukefx::Distortion distortion;
+    ukefx::Delay delay;
+};
+
+// Not RT. Adds the effects named on the command line to the chain, in order.
+// Each effect object can appear once: adding it twice would make both slots share
+// one set of state (e.g. one delay buffer written twice per sample).
+bool buildChain(int argc, char** argv, Effects& effects, ukefx::EffectChain& chain, std::string& names) {
+    bool used[2] = {false, false};
+    for (int i = 1; i < argc; ++i) {
+        const bool isDistortion = std::strcmp(argv[i], "distortion") == 0;
+        const bool isDelay = std::strcmp(argv[i], "delay") == 0;
+        if (!isDistortion && !isDelay) {
+            std::fprintf(stderr, "Unknown effect '%s'. Known effects: distortion, delay\n", argv[i]);
+            return false;
+        }
+        bool& wasUsed = used[isDelay ? 1 : 0];
+        if (wasUsed) {
+            std::fprintf(stderr, "Effect '%s' can only appear once\n", argv[i]);
+            return false;
+        }
+        wasUsed = true;
+        chain.add(isDelay ? static_cast<ukefx::Effect&>(effects.delay) : effects.distortion);
+        names += names.empty() ? argv[i] : std::string(" -> ") + argv[i];
+    }
+    return true;
+}
+
 } // namespace
 
-// Usage: ukefx_cli [drive]   distortion (default drive 10; 1 is almost clean)
-//        ukefx_cli delay     delay, 350 ms, feedback 0.4, mix 0.35
-// Until the effect chain exists, only one effect runs at a time.
+// Usage: ukefx_cli [effect ...]   effects run in the order given; known: distortion, delay
+//        ukefx_cli                same as: ukefx_cli distortion delay
 int main(int argc, char** argv) {
     SetConsoleCtrlHandler(onConsoleCtrl, TRUE);
 
-    const bool useDelay = argc > 1 && std::strcmp(argv[1], "delay") == 0;
-    const float drive = argc > 1 && !useDelay ? std::strtof(argv[1], nullptr) : 10.0f;
-
-    ukefx::Distortion distortion;
-    distortion.setDrive(drive);
-    distortion.setLevel(0.3f); // tanh saturates near full scale; keep headphones safe.
-    ukefx::Delay delay;        // Defaults are a musical echo; see delay.h.
-
-    ukefx::Effect& effect = useDelay ? static_cast<ukefx::Effect&>(delay) : distortion;
+    Effects effects;
+    effects.distortion.setDrive(4.0f);  // Warm overdrive rather than fuzz.
+    effects.distortion.setLevel(0.3f);  // tanh saturates near full scale; keep headphones safe.
+                                        // The delay keeps its defaults: a musical echo, see delay.h.
+    ukefx::EffectChain chain;
+    std::string names;
+    char* defaultArgs[] = {argv[0], const_cast<char*>("distortion"), const_cast<char*>("delay")};
+    const bool ok = argc > 1 ? buildChain(argc, argv, effects, chain, names)
+                             : buildChain(3, defaultArgs, effects, chain, names);
+    if (!ok) return 1;
 
     // Declared after the effects so it is destroyed first: the stream stops
-    // before the effect it calls into goes away.
+    // before the effects it calls into go away.
     ukefx::RtAudioBackend backend;
-    if (!backend.open({.sampleRate = 48000, .bufferFrames = 128}, runEffect, &effect)) {
+    if (!backend.open({.sampleRate = 48000, .bufferFrames = 128}, runEffect, &chain)) {
         std::fprintf(stderr, "Failed to open audio stream: %s\n", backend.lastError().c_str());
         return 1;
     }
@@ -63,14 +93,11 @@ int main(int argc, char** argv) {
     std::printf("Buffer size:   %u frames (%.2f ms)\n", info.bufferFrames,
                 1000.0 * info.bufferFrames / info.sampleRate);
     std::printf("Reported stream latency: %ld frames\n", info.latencyFrames);
-    if (useDelay)
-        std::printf("Effect:        delay, 350 ms, feedback 0.4, mix 0.35\n");
-    else
-        std::printf("Effect:        distortion, drive %.1f\n", drive);
+    std::printf("Effects:       %s\n", names.c_str());
 
     // Prepare with the buffer size the device actually gave us, before audio starts.
-    // For the delay this is where its 2-second buffer is allocated.
-    effect.prepare(static_cast<int>(info.sampleRate), static_cast<int>(info.bufferFrames));
+    // This is where the delay allocates its 2-second buffer.
+    chain.prepare(static_cast<int>(info.sampleRate), static_cast<int>(info.bufferFrames));
 
     if (!backend.start()) {
         std::fprintf(stderr, "Failed to start audio stream: %s\n", backend.lastError().c_str());
