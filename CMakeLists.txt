@@ -29,3 +29,5 @@ FetchContent_Declare(rtaudio
     GIT_TAG        6.0.1
     GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(rtaudio)
+
+add_subdirectory(backends)
