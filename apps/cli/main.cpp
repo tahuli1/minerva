@@ -2,9 +2,9 @@
 #define NOMINMAX
 #include <windows.h>
 
-#include "delay.h"
-#include "distortion.h"
 #include "effect_chain.h"
+#include "effects/delay.h"
+#include "effects/distortion.h"
 #include "rtaudio/rtaudio_backend.h"
 
 #include <atomic>
