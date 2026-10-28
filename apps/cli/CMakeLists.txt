@@ -1,0 +1,2 @@
+add_executable(ukefx_cli main.cpp)
+target_link_libraries(ukefx_cli PRIVATE ukefx_backend_rtaudio ukefx_warnings)
