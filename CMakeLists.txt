@@ -34,5 +34,6 @@ FetchContent_Declare(rtaudio
     GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(rtaudio)
 
+add_subdirectory(core)
 add_subdirectory(backends)
 add_subdirectory(apps/cli)
