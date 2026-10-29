@@ -14,7 +14,7 @@ distortion effect to the headphones. More effects, measurements and a GUI are co
 - Windows 10/11
 - Visual Studio 2022 or newer with the C++ workload
 - CMake 3.24+
-- Git (CMake fetches RtAudio and GoogleTest on first configure)
+- Git (CMake fetches RtAudio, GoogleTest and dr_wav on first configure)
 
 ## Build
 
@@ -50,6 +50,17 @@ Changes glide over 20 ms, so they don't click.
 
 Use headphones, and turn the volume down before the first run: with speakers, the
 microphone will pick up the output and feed back.
+
+## Process a WAV file offline
+
+```
+build\tools\Release\ukefx_process.exe <in.wav> <out.wav> [effect ...]
+```
+
+Runs a recording through the same effects as the live app, in the same 128-sample
+blocks, with no audio device. The effect names work as above (default:
+`distortion delay`). The output is a mono 32-bit float WAV with 2 s of extra tail so
+the echoes can fade out.
 
 ## Test
 
