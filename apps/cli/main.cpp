@@ -62,7 +62,7 @@ int main() {
     cli::Effects effects;
     cli::Settings settings;
     cli::apply(settings, effects);     // Before prepare(), so the smoothers start at these values.
-    effects.distortion.setLevel(0.3f); // tanh saturates near full scale; keep headphones safe.
+    effects.distortion.setLevel(0.3f); // the overdrive peaks near full scale; keep headphones safe.
 
     minerva::EffectChain chain;
     chain.add(effects.distortion);
