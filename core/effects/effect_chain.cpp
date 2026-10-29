@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace ukefx {
+namespace minerva {
 
 bool EffectChain::add(Effect& effect) {
     if (count_ == kMaxEffects) return false;
@@ -25,4 +25,4 @@ void EffectChain::process(const float* in, float* out, int n) {
     for (int i = 1; i < count_; ++i) effects_[i]->process(out, out, n);
 }
 
-} // namespace ukefx
+} // namespace minerva

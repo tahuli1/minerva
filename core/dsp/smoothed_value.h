@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ukefx {
+namespace minerva {
 
 // Default time for a parameter to glide to a new value. Long enough to hide the
 // step (no "zipper" clicks), short enough that a knob still feels immediate.
@@ -54,4 +54,4 @@ private:
     int remaining_ = 0;
 };
 
-} // namespace ukefx
+} // namespace minerva

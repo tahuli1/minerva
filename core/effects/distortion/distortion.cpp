@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace ukefx {
+namespace minerva {
 
 void Distortion::prepare(int sampleRate, int /*maxBlockSize*/) {
     driveSmoothed_.reset(sampleRate, kParamRampSeconds, drive_.load(std::memory_order_relaxed));
@@ -22,4 +22,4 @@ void Distortion::process(const float* in, float* out, int n) {
     }
 }
 
-} // namespace ukefx
+} // namespace minerva

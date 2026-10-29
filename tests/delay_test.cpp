@@ -12,7 +12,7 @@ namespace {
 constexpr int kSampleRate = 1000;
 constexpr int kBlock = 64;
 
-void configure(ukefx::Delay& d, float timeMs, float feedback, float mix) {
+void configure(minerva::Delay& d, float timeMs, float feedback, float mix) {
     d.setTimeMs(timeMs);
     d.setFeedback(feedback);
     d.setMix(mix);
@@ -28,7 +28,7 @@ std::vector<float> impulse(int length) {
 } // namespace
 
 TEST(Delay, ImpulseComesBackAfterTheDelayTime) {
-    ukefx::Delay d;
+    minerva::Delay d;
     configure(d, 10.0f, 0.0f, 1.0f); // wet only, a single repeat
     auto in = impulse(kBlock);
     std::vector<float> out(kBlock);
@@ -37,7 +37,7 @@ TEST(Delay, ImpulseComesBackAfterTheDelayTime) {
 }
 
 TEST(Delay, EachRepeatIsScaledByFeedback) {
-    ukefx::Delay d;
+    minerva::Delay d;
     configure(d, 10.0f, 0.5f, 1.0f);
     auto in = impulse(kBlock);
     std::vector<float> out(kBlock);
@@ -50,7 +50,7 @@ TEST(Delay, EachRepeatIsScaledByFeedback) {
 }
 
 TEST(Delay, MixZeroIsDryOnly) {
-    ukefx::Delay d;
+    minerva::Delay d;
     configure(d, 10.0f, 0.5f, 0.0f);
     std::vector<float> in(kBlock), out(kBlock);
     for (int i = 0; i < kBlock; ++i) in[i] = std::sin(0.3f * i);
@@ -60,7 +60,7 @@ TEST(Delay, MixZeroIsDryOnly) {
 
 TEST(Delay, StateCarriesAcrossBlocks) {
     // The audio callback hands us small blocks; the echo must not care where they split.
-    ukefx::Delay whole, split;
+    minerva::Delay whole, split;
     configure(whole, 10.0f, 0.5f, 0.5f);
     configure(split, 10.0f, 0.5f, 0.5f);
     auto in = impulse(kBlock);
@@ -74,7 +74,7 @@ TEST(Delay, StateCarriesAcrossBlocks) {
 }
 
 TEST(Delay, InPlaceMatchesOutOfPlace) {
-    ukefx::Delay a, b;
+    minerva::Delay a, b;
     configure(a, 10.0f, 0.5f, 0.5f);
     configure(b, 10.0f, 0.5f, 0.5f);
     std::vector<float> in(kBlock), expected(kBlock);
@@ -86,7 +86,7 @@ TEST(Delay, InPlaceMatchesOutOfPlace) {
 
 TEST(Delay, FeedbackIsClampedSoEchoesAlwaysDecay) {
     // Asking for feedback above 1 must not make the signal grow.
-    ukefx::Delay d;
+    minerva::Delay d;
     configure(d, 10.0f, 5.0f, 1.0f);
     auto in = impulse(1000);
     std::vector<float> out(in.size());
@@ -100,7 +100,7 @@ TEST(Delay, FeedbackIsClampedSoEchoesAlwaysDecay) {
 
 TEST(Delay, TimeLongerThanTheBufferIsClamped) {
     // An absurd delay time must never read outside the buffer.
-    ukefx::Delay d;
+    minerva::Delay d;
     configure(d, 1e9f, 0.0f, 1.0f);
     auto in = impulse(4096);
     std::vector<float> out(in.size());
@@ -111,7 +111,7 @@ TEST(Delay, TimeLongerThanTheBufferIsClamped) {
 TEST(Delay, MixChangeGlidesInsteadOfJumping) {
     // A long delay keeps the wet signal silent here, so the output is just
     // (1 - mix) * dry and shows the mix ramp directly.
-    ukefx::Delay d;
+    minerva::Delay d;
     configure(d, 1000.0f, 0.0f, 0.0f);
     std::vector<float> in(100, 1.0f), out(100);
     d.process(in.data(), out.data(), 10);

@@ -5,7 +5,7 @@
 
 namespace cli {
 
-void apply(const Settings& settings, ukefx::EffectSet& effects) {
+void apply(const Settings& settings, minerva::EffectSet& effects) {
     effects.distortion.setDrive(settings.drive);
     effects.delay.setFeedback(settings.feedback);
     effects.delay.setMix(settings.mix);
