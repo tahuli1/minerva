@@ -1,6 +1,8 @@
 # Portable DSP library: standard C++ only, no OS or audio-API headers.
 # Top level: the framework (Effect, EffectChain). effects/: one effect per file pair.
+# dsp/: building blocks shared by effects.
 add_library(ukefx_core STATIC
+    dsp/smoothed_value.h
     effect.h
     effect_chain.cpp
     effect_chain.h
