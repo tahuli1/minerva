@@ -4,7 +4,7 @@
 A small real-time music studio for Windows, written in C++. You play melodies and chords
 on synthesized instruments from the computer keyboard, add drums, build songs from
 patterns and loops, and shape the sound with effects, live, into headphones. Not tied
-to one genre. The full spec and design are in `DESIGN.md`, kept locally (not in the repo).
+to one genre. The full spec and design are in `PLAN.html` (Hebrew), kept locally (not in the repo).
 
 This is a **portfolio project for real-time (RT) developer job interviews**. The point is
 not just "it makes music" — it is to demonstrate real-time engineering: hard deadlines,
@@ -29,7 +29,7 @@ were built under that name; the engine, effects and tooling carry over.)
 - **Input:** the computer keyboard (75%, no numpad), read by virtual key code with key-up events. No MIDI hardware for now.
 - **GUI (later stage):** Dear ImGui + ImPlot.
 - **DSP:** DaisySP (oscillators, envelopes, filters, drums, effects): MIT, written for embedded, never allocates.
-- **Tests:** GoogleTest; offline tests render to and read from WAV files via dr_wav.
+- **Tests:** GoogleTest; effects and voices render into memory, so no sound card is needed (and CI can run them).
 - **CI:** GitHub Actions on Windows runners.
 - Dependencies via CMake FetchContent (or vcpkg if FetchContent is impractical for a dependency).
 
@@ -103,10 +103,10 @@ If a change might violate these rules, stop and point it out instead of doing it
 ## Milestones
 1. **Skeleton:** ✅ CMake project, RtAudio via FetchContent, CLI pass-through.
 2. **Effects:** ✅ distortion, delay, effect chain, parameter smoothing, offline WAV tool, CI.
-3. **Synth:** rename to Minerva, oscillators, ADSR, 16-voice pool, keyboard input (key down/up) through an SPSC command queue.
-4. **Measurement:** callback timing vs. deadline, own xrun detection, lock-free metrics buffer, CSV export + plotting script, loopback latency tool.
+3. **Synth:** rename to Minerva, oscillators, ADSR, 16-voice pool, keyboard input (key down/up) through an SPSC command queue; runs without a mic (output-only stream when none is present).
+4. **Measurement:** callback timing vs. deadline, own xrun detection, lock-free metrics buffer, CSV export + plotting script, loopback latency tool, a test that fails if the callback allocates, and an ARM (Cortex-M) build of `core/` in CI.
 5. **Sounds:** filter + filter envelope, presets (keys, pad, bass, lead, pluck), reverb; distortion and delay switch to DaisySP.
-6. **Sequencer + drums:** sample-based clock, 16-step patterns, synthesized drums, recording into patterns, save/load songs (JSON, nlohmann/json), offline render to WAV.
+6. **Sequencer + drums:** sample-based clock, 16-step patterns, synthesized drums, recording into patterns, save/load songs (JSON, nlohmann/json), offline render to WAV (dr_wav).
 7. **RT hardening:** MMCSS, `VirtualLock`, buffer-size tuning, stress testing, LatencyMon/ETW analysis. Record before/after numbers.
 8. **Looper:** locked audio buffer, record/play/overdub in sync with the pattern; hold a key to record from the mic, with latency compensation.
 9. **Own backend:** WASAPI exclusive mode (then ASIO if hardware arrives).
