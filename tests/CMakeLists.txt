@@ -3,6 +3,7 @@ add_executable(minerva_tests
     denormals_test.cpp
     distortion_test.cpp
     effect_chain_test.cpp
+    engine_test.cpp
     smoothed_value_test.cpp
     synth_test.cpp
     voice_test.cpp)
