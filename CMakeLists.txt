@@ -62,6 +62,31 @@ add_library(dr_wav INTERFACE)
 # SYSTEM: warnings from inside the header are not ours to fix, so /W4 skips them.
 target_include_directories(dr_wav SYSTEM INTERFACE ${dr_libs_SOURCE_DIR})
 
+# DaisySP: DSP building blocks (oscillators, envelopes, filters, drums) written for
+# embedded audio, so they never allocate. MIT licensed.
+# We build only the files we use instead of DaisySP's own CMake target: some of its
+# other files use GCC-only syntax that MSVC rejects. SOURCE_SUBDIR points at nothing
+# so that target is never configured.
+FetchContent_Declare(daisysp
+    GIT_REPOSITORY https://github.com/electro-smith/DaisySP.git
+    GIT_TAG        V1.0.0
+    GIT_SHALLOW    TRUE
+    SOURCE_SUBDIR  no-cmake)
+FetchContent_MakeAvailable(daisysp)
+set(DAISYSP_SRC ${daisysp_SOURCE_DIR}/Source)
+add_library(daisysp STATIC
+    ${DAISYSP_SRC}/Control/adsr.cpp
+    ${DAISYSP_SRC}/Synthesis/oscillator.cpp)
+target_include_directories(daisysp SYSTEM PUBLIC ${DAISYSP_SRC})
+# Its sources include each other by bare file name, from these folders.
+target_include_directories(daisysp PRIVATE ${DAISYSP_SRC}/Control ${DAISYSP_SRC}/Synthesis
+                                           ${DAISYSP_SRC}/Utility)
+# MSVC only defines M_E, M_PI etc. when asked to.
+target_compile_definitions(daisysp PRIVATE _USE_MATH_DEFINES)
+if(MSVC)
+    target_compile_options(daisysp PRIVATE /wd4244) # its own int -> float conversions
+endif()
+
 enable_testing()
 
 add_subdirectory(core)
