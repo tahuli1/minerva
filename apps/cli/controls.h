@@ -1,14 +1,8 @@
 #pragma once
 
-#include "effects/delay.h"
-#include "effects/distortion.h"
+#include "effect_set.h"
 
 namespace cli {
-
-struct Effects {
-    ukefx::Distortion distortion;
-    ukefx::Delay delay;
-};
 
 // The values the user controls from the keyboard. Owned by the main thread, which
 // pushes them into the effects' atomic setters; the audio thread never sees this.
@@ -18,7 +12,7 @@ struct Settings {
     float mix = 0.35f;
 };
 
-void apply(const Settings& settings, Effects& effects);
+void apply(const Settings& settings, ukefx::EffectSet& effects);
 
 // Returns true if the key changed a setting.
 bool handleKey(int key, Settings& settings);
