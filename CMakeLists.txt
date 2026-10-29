@@ -75,6 +75,18 @@ if(MSVC)
     target_compile_options(daisysp PRIVATE /wd4244) # its own int -> float conversions
 endif()
 
+# rigtorp/SPSCQueue: a single-header, lock-free single-producer/single-consumer queue
+# (MIT). It allocates only in its constructor, pads its two indices onto separate cache
+# lines, and publishes with release/acquire. Pinned to a commit: its last tag is from 2021.
+# Only the header is used, so its own CMake (tests, benchmarks) is never configured.
+FetchContent_Declare(spscqueue
+    GIT_REPOSITORY https://github.com/rigtorp/SPSCQueue.git
+    GIT_TAG        59a6a938513ea5004817383711ed35d32385d3ee
+    SOURCE_SUBDIR  no-cmake)
+FetchContent_MakeAvailable(spscqueue)
+add_library(spscqueue INTERFACE)
+target_include_directories(spscqueue SYSTEM INTERFACE ${spscqueue_SOURCE_DIR}/include)
+
 enable_testing()
 
 add_subdirectory(core)
