@@ -23,19 +23,20 @@ void Synth::setEnvelope(const AdsrParams& params) {
 }
 
 int Synth::pickVoice(int note) const {
-    // 1. The same note is already sounding: play it again on that voice, rather than
-    //    having one note on two voices.
+    // The same note is already sounding: play it again on that voice, rather than
+    // having one note on two voices.
     for (int i = 0; i < kVoices; ++i)
         if (voices_[i].isActive() && voices_[i].note() == note) return i;
-    // 2. A free voice.
+    // Otherwise a free voice.
     for (int i = 0; i < kVoices; ++i)
         if (!voices_[i].isActive()) return i;
-    // 3. Steal the quietest voice whose key is already released: the least audible loss.
+    // Otherwise steal the quietest voice whose key is already released: the least
+    // audible loss.
     int best = -1;
     for (int i = 0; i < kVoices; ++i)
         if (!voices_[i].isHeld() && (best < 0 || voices_[i].level() < voices_[best].level())) best = i;
     if (best >= 0) return best;
-    // 4. Every key is held: steal the oldest note.
+    // Every key is held: steal the oldest note.
     best = 0;
     for (int i = 1; i < kVoices; ++i)
         if (startedAt_[i] < startedAt_[best]) best = i;
