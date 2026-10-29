@@ -37,6 +37,12 @@ public:
     void render(float* out, int n);
 
     bool isActive() const { return gate_ || envelope_.IsRunning(); }
+    // True while the key is held; false once released, even if the note still fades.
+    bool isHeld() const { return gate_; }
+    // The envelope level at the end of the last render(), 0..1. DaisySP's Adsr can't
+    // be asked for it, so the voice remembers it; voice stealing uses it to pick the
+    // quietest note.
+    float level() const { return level_; }
     int note() const { return note_; }
 
     static float noteToHz(int note);
@@ -54,6 +60,7 @@ private:
     bool gate_ = false; // true while the key is held
     int note_ = -1;
     float velocity_ = 1.0f;
+    float level_ = 0.0f;
 };
 
 } // namespace minerva
