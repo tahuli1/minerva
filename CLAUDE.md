@@ -28,6 +28,7 @@ were built under that name; the engine, effects and tooling carry over.)
 - **Audio I/O:** RtAudio (over WASAPI), duplex: the mic is used only to record into the looper. Later: our own WASAPI exclusive-mode backend, then ASIO.
 - **Input:** the computer keyboard (75%, no numpad), read by virtual key code with key-up events. No MIDI hardware for now.
 - **GUI (later stage):** Dear ImGui + ImPlot.
+- **DSP:** DaisySP (oscillators, envelopes, filters, drums, effects): MIT, written for embedded, never allocates.
 - **Tests:** GoogleTest; offline tests render to and read from WAV files via dr_wav.
 - **CI:** GitHub Actions on Windows runners.
 - Dependencies via CMake FetchContent (or vcpkg if FetchContent is impractical for a dependency).
@@ -91,6 +92,8 @@ If a change might violate these rules, stop and point it out instead of doing it
 - Work in small, reviewable steps. One milestone at a time; don't jump ahead.
 - After each step: explain briefly what you did and why, and how to build/run/test it.
 - Explain RT-relevant decisions — I want to understand them well enough to discuss in an interview.
+- Don't reinvent the wheel: use existing capabilities and third-party libraries;
+  write our own code only for what no suitable library provides.
 - Ask before adding a new dependency or changing the architecture.
 - Git: a branch and a PR per coherent chunk of a milestone; separate logical commits.
 - **No commit without my explicit approval.** Show me what changed and the planned
@@ -102,7 +105,7 @@ If a change might violate these rules, stop and point it out instead of doing it
 2. **Effects:** ✅ distortion, delay, effect chain, parameter smoothing, offline WAV tool, CI.
 3. **Synth:** rename to Minerva, oscillators, ADSR, 16-voice pool, keyboard input (key down/up) through an SPSC command queue.
 4. **Measurement:** callback timing vs. deadline, own xrun detection, lock-free metrics buffer, CSV export + plotting script, loopback latency tool.
-5. **Sounds:** filter + filter envelope, presets (keys, pad, bass, lead, pluck), reverb.
+5. **Sounds:** filter + filter envelope, presets (keys, pad, bass, lead, pluck), reverb; distortion and delay switch to DaisySP.
 6. **Sequencer + drums:** sample-based clock, 16-step patterns, synthesized drums, recording into patterns, save/load songs (JSON, nlohmann/json), offline render to WAV.
 7. **RT hardening:** MMCSS, `VirtualLock`, buffer-size tuning, stress testing, LatencyMon/ETW analysis. Record before/after numbers.
 8. **Looper:** locked audio buffer, record/play/overdub in sync with the pattern; hold a key to record from the mic, with latency compensation.
