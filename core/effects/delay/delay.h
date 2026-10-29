@@ -1,7 +1,7 @@
 #pragma once
 
 #include "dsp/smoothed_value.h"
-#include "effect.h"
+#include "effects/effect.h"
 
 #include <atomic>
 #include <cstddef>

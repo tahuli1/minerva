@@ -5,8 +5,8 @@
 #include <conio.h>
 
 #include "controls.h"
-#include "effect_chain.h"
-#include "effect_set.h"
+#include "effects/effect_chain.h"
+#include "effects/effect_set.h"
 #include "rtaudio/rtaudio_backend.h"
 
 #include <atomic>
