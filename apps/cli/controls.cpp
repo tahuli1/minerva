@@ -21,11 +21,10 @@ void apply(const Settings& settings, Effects& effects) {
 
 bool handleKey(int key, bool extended, Settings& settings) {
     if (!extended) return false;
-    // Drive moves in ratios because the ear hears it on a log scale:
-    // 1 -> 2 is as big a change as 10 -> 20.
+    using minerva::Distortion;
     switch (key) {
-    case kF1: settings.drive = std::max(1.0f, settings.drive / 1.25f); return true;
-    case kF2: settings.drive = std::min(40.0f, settings.drive * 1.25f); return true;
+    case kF1: settings.drive = std::max(Distortion::kMinDrive, settings.drive - 0.05f); return true;
+    case kF2: settings.drive = std::min(Distortion::kMaxDrive, settings.drive + 0.05f); return true;
     case kF3: settings.feedback = std::max(0.0f, settings.feedback - 0.05f); return true;
     case kF4: settings.feedback = std::min(0.95f, settings.feedback + 0.05f); return true;
     case kF5: settings.mix = std::max(0.0f, settings.mix - 0.05f); return true;
@@ -40,7 +39,7 @@ void printHelp() {
 
 void printSettings(const Settings& settings) {
     // \r rewrites the same line, so the display stays one line while you play.
-    std::printf("\rdrive %5.1f | feedback %.2f | mix %.2f   ", settings.drive, settings.feedback,
+    std::printf("\rdrive %.2f | feedback %.2f | mix %.2f   ", settings.drive, settings.feedback,
                 settings.mix);
     std::fflush(stdout);
 }

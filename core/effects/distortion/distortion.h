@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Effects/overdrive.h"
 #include "dsp/smoothed_value.h"
 #include "effects/effect.h"
 
@@ -7,26 +8,27 @@
 
 namespace minerva {
 
-// Soft-clipping distortion: out = level * tanh(drive * in).
-// tanh is ~linear for small inputs and saturates smoothly towards +/-1,
-// which sounds warmer than hard clipping.
+// DaisySP's Overdrive: a soft clipper with normalized output, so more drive means more
+// distortion, not more volume. `level` sets the final volume.
 class Distortion : public Effect {
 public:
+    // At exactly 1.0 DaisySP's output jumps to ~3x full scale, so the drive stops short.
+    static constexpr float kMinDrive = 0.05f;
+    static constexpr float kMaxDrive = 0.95f;
+
     void prepare(int sampleRate, int maxBlockSize) override;
     void process(const float* in, float* out, int n) override;
 
-    // Safe to call from any thread while audio runs. Changes glide over
-    // kParamRampSeconds; prepare() starts from the values set so far, with no glide.
-    void setDrive(float drive) { drive_.store(drive, std::memory_order_relaxed); }
+    // Safe from any thread; changes glide over kParamRampSeconds.
+    void setDrive(float drive);
     void setLevel(float level) { level_.store(level, std::memory_order_relaxed); }
 
 private:
-    // Atomics so the main thread can change them while the audio thread reads.
-    // Relaxed is enough: each is an independent value, nothing is published through it.
-    std::atomic<float> drive_{1.0f};
-    std::atomic<float> level_{1.0f};
+    daisysp::Overdrive overdrive_;
+    float appliedDrive_ = -1.0f;
 
-    // Audio-thread copies that glide towards the atomics' values.
+    std::atomic<float> drive_{0.4f};
+    std::atomic<float> level_{1.0f};
     SmoothedValue driveSmoothed_;
     SmoothedValue levelSmoothed_;
 

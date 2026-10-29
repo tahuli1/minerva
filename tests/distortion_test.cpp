@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <vector>
@@ -21,28 +22,33 @@ void configure(minerva::Distortion& d, float drive, float level) {
 
 TEST(Distortion, SilenceStaysSilent) {
     minerva::Distortion d;
-    configure(d, 20.0f, 1.0f);
+    configure(d, 0.8f, 1.0f);
     std::array<float, kBlock> in{}, out{};
     out.fill(1.0f);
     d.process(in.data(), out.data(), kBlock);
     for (float s : out) EXPECT_EQ(s, 0.0f);
 }
 
-TEST(Distortion, OutputNeverExceedsLevel) {
-    // Even absurd input must stay within +/-level: this is what protects the ears.
+TEST(Distortion, OutputStaysBoundedForAnyDrive) {
+    // Any input in [-1, 1], any drive (out-of-range drives are clamped): the output stays
+    // below 1.08 * level. Fails if drive 1.0 is allowed (DaisySP's ~3x jump).
     const float level = 0.5f;
-    minerva::Distortion d;
-    configure(d, 50.0f, level);
-    std::array<float, kBlock> in{-100.0f, -1.0f, -0.1f, 0.0f, 0.1f, 1.0f, 100.0f, 1e6f};
-    std::array<float, kBlock> out{};
-    d.process(in.data(), out.data(), kBlock);
-    for (float s : out) EXPECT_LE(std::abs(s), level);
+    float loudest = 0.0f;
+    for (int step = 0; step <= 20; ++step) { // whole steps: 0.05f added 20 times overshoots 1.0f
+        minerva::Distortion d;
+        configure(d, static_cast<float>(step) / 20.0f, level);
+        std::vector<float> in(401), out(401);
+        for (int k = 0; k <= 400; ++k) in[k] = -1.0f + static_cast<float>(k) / 200.0f;
+        d.process(in.data(), out.data(), 401);
+        for (float s : out) loudest = std::max(loudest, std::abs(s));
+    }
+    EXPECT_LE(loudest, 1.08f * level);
 }
 
 TEST(Distortion, IsOddSymmetric) {
-    // f(-x) == -f(x): no DC offset and only odd harmonics, like a symmetric tube stage.
+    // f(-x) == -f(x): no DC offset.
     minerva::Distortion d;
-    configure(d, 8.0f, 1.0f);
+    configure(d, 0.6f, 1.0f);
     std::array<float, kBlock> pos{0.01f, 0.05f, 0.1f, 0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
     std::array<float, kBlock> neg{}, outPos{}, outNeg{};
     for (int i = 0; i < kBlock; ++i) neg[i] = -pos[i];
@@ -52,39 +58,43 @@ TEST(Distortion, IsOddSymmetric) {
 }
 
 TEST(Distortion, SmallSignalsAreAmplifiedLinearly) {
-    // tanh(u) ~= u for small u, so quiet playing just gets louder by `drive`.
-    const float drive = 4.0f;
+    // Near zero a soft clipper is linear: doubling a tiny input doubles the output.
     minerva::Distortion d;
-    configure(d, drive, 1.0f);
-    std::array<float, kBlock> in{}, out{};
-    in.fill(1e-3f);
-    d.process(in.data(), out.data(), kBlock);
-    for (float s : out) EXPECT_NEAR(s, drive * 1e-3f, 1e-6f);
+    configure(d, 0.4f, 1.0f);
+    std::array<float, 2> in{1e-4f, 2e-4f}, out{};
+    d.process(in.data(), out.data(), 2);
+    EXPECT_GT(out[0], 1e-4f);
+    EXPECT_NEAR(out[1] / out[0], 2.0f, 0.01f);
 }
 
 TEST(Distortion, InPlaceMatchesOutOfPlace) {
-    // The effect chain will process in place, so in == out must work.
-    minerva::Distortion d;
-    configure(d, 10.0f, 0.8f);
+    minerva::Distortion a, b;
+    configure(a, 0.7f, 0.8f);
+    configure(b, 0.7f, 0.8f);
     std::array<float, kBlock> in{-1.0f, -0.5f, -0.1f, 0.0f, 0.1f, 0.3f, 0.7f, 1.0f};
     std::array<float, kBlock> expected{};
-    d.process(in.data(), expected.data(), kBlock);
-    d.process(in.data(), in.data(), kBlock);
+    a.process(in.data(), expected.data(), kBlock);
+    b.process(in.data(), in.data(), kBlock);
     for (int i = 0; i < kBlock; ++i) EXPECT_FLOAT_EQ(in[i], expected[i]);
 }
 
 TEST(Distortion, DriveChangeGlidesInsteadOfJumping) {
-    // Without smoothing, jumping from drive 1 to 20 on a steady 0.05 input would make
-    // the output leap from ~0.05 to ~0.76 in one sample: an audible click.
-    minerva::Distortion d;
-    configure(d, 1.0f, 1.0f);
-    std::vector<float> in(2000, 0.05f), out(2000);
+    // Drive 0.1 -> 0.9 on a steady input: small steps over 20 ms (960 samples), then
+    // exactly the output of a distortion set to 0.9 from the start.
+    const float input = 0.05f;
+    minerva::Distortion d, settled;
+    configure(d, 0.1f, 1.0f);
+    configure(settled, 0.9f, 1.0f);
+    std::vector<float> in(2000, input), out(2000);
     d.process(in.data(), out.data(), 100);
-    d.setDrive(20.0f);
+    d.setDrive(0.9f);
     d.process(in.data() + 100, out.data() + 100, 1900);
+    float target = 0.0f;
+    settled.process(&input, &target, 1);
 
+    const float change = std::abs(target - out[99]);
+    ASSERT_GT(change, 0.5f);
     for (int i = 100; i < 2000; ++i)
-        EXPECT_LT(std::abs(out[i] - out[i - 1]), 0.002f) << "jump at " << i;
-    // 20 ms at 48 kHz is 960 samples; after that the new drive is fully applied.
-    EXPECT_FLOAT_EQ(out[100 + 960], std::tanh(20.0f * 0.05f));
+        EXPECT_LT(std::abs(out[i] - out[i - 1]), change / 50.0f) << "jump at " << i;
+    EXPECT_FLOAT_EQ(out[100 + 960], target);
 }
