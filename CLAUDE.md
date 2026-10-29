@@ -103,11 +103,11 @@ If a change might violate these rules, stop and point it out instead of doing it
 3. **Synth:** rename to Minerva, oscillators, ADSR, 16-voice pool, keyboard input (key down/up) through an SPSC command queue.
 4. **Measurement:** callback timing vs. deadline, own xrun detection, lock-free metrics buffer, CSV export + plotting script, loopback latency tool.
 5. **Sounds:** filter + filter envelope, presets (keys, pad, bass, lead, pluck), reverb.
-6. **Sequencer + drums:** sample-based clock, 16-step patterns, synthesized drums, recording into patterns, offline render to WAV.
+6. **Sequencer + drums:** sample-based clock, 16-step patterns, synthesized drums, recording into patterns, save/load songs (JSON, nlohmann/json), offline render to WAV.
 7. **RT hardening:** MMCSS, `VirtualLock`, buffer-size tuning, stress testing, LatencyMon/ETW analysis. Record before/after numbers.
 8. **Looper:** locked audio buffer, record/play/overdub in sync with the pattern; hold a key to record from the mic, with latency compensation.
 9. **Own backend:** WASAPI exclusive mode (then ASIO if hardware arrives).
-10. **GUI:** ImGui on-screen keyboard, step grid, parameters, save/load (JSON), live ImPlot of callback time vs. deadline.
+10. **GUI:** ImGui on-screen keyboard, step grid, parameters, save/open buttons, live ImPlot of callback time vs. deadline.
 11. **Polish:** README with graphs, demo video, public repository.
 
 ## Build
