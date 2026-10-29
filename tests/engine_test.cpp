@@ -91,3 +91,21 @@ TEST(Engine, WorkPerBlockIsBounded) {
     block(engine);
     EXPECT_EQ(engine.pendingCommands(), 0u);
 }
+
+TEST(Engine, AWaveformChangeThroughTheQueueChangesTheSound) {
+    minerva::Engine sine, square;
+    prepare(sine);
+    prepare(square);
+    sine.setWaveform(minerva::Waveform::Sine);
+    square.setWaveform(minerva::Waveform::Square);
+    sine.noteOn(69, 1.0f);
+    square.noteOn(69, 1.0f);
+    std::vector<float> a(kBlock), b(kBlock);
+    for (int i = 0; i < 4; ++i) { // past the attack
+        sine.process(nullptr, a.data(), kBlock);
+        square.process(nullptr, b.data(), kBlock);
+    }
+    float difference = 0.0f;
+    for (int i = 0; i < kBlock; ++i) difference = std::max(difference, std::abs(a[i] - b[i]));
+    EXPECT_GT(difference, 0.01f);
+}

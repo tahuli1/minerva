@@ -16,20 +16,32 @@ void Engine::prepare(int sampleRate, int maxBlockSize) {
 
 bool Engine::noteOn(int note, float velocity) {
     return commands_.try_push(
-        NoteCommand{NoteCommand::Type::NoteOn, static_cast<std::uint8_t>(note), velocity});
+        Command{Command::Type::NoteOn, static_cast<std::uint8_t>(note), velocity});
 }
 
 bool Engine::noteOff(int note) {
     return commands_.try_push(
-        NoteCommand{NoteCommand::Type::NoteOff, static_cast<std::uint8_t>(note), 0.0f});
+        Command{Command::Type::NoteOff, static_cast<std::uint8_t>(note), 0.0f});
+}
+
+bool Engine::setWaveform(Waveform waveform) {
+    return commands_.try_push(
+        Command{Command::Type::SetWaveform, static_cast<std::uint8_t>(waveform), 0.0f});
+}
+
+void Engine::apply(const Command& command) {
+    switch (command.type) {
+    case Command::Type::NoteOn: synth_.noteOn(command.value, command.velocity); break;
+    case Command::Type::NoteOff: synth_.noteOff(command.value); break;
+    case Command::Type::SetWaveform: synth_.setWaveform(static_cast<Waveform>(command.value)); break;
+    }
 }
 
 void Engine::process(const float* /*in*/, float* out, int n) {
     for (int i = 0; i < kMaxCommandsPerBlock; ++i) {
-        const NoteCommand* command = commands_.front();
+        const Command* command = commands_.front();
         if (command == nullptr) break;
-        if (command->type == NoteCommand::Type::NoteOn) synth_.noteOn(command->note, command->velocity);
-        else synth_.noteOff(command->note);
+        apply(*command);
         commands_.pop();
     }
 

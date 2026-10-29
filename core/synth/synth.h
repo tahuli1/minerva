@@ -17,8 +17,10 @@ public:
 
     // Not RT: call before audio starts.
     void prepare(int sampleRate);
-    void setWaveform(Waveform waveform);
     void setEnvelope(const AdsrParams& params);
+
+    // RT: a fixed loop over the voices, each only storing the shape.
+    void setWaveform(Waveform waveform);
 
     // RT. `velocity` is the loudness of the note, 0..1.
     void noteOn(int note, float velocity);
