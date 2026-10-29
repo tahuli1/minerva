@@ -2,7 +2,7 @@
 #   dsp/      small building blocks of our own (parameter smoothing)
 #   effects/  the effect framework (interface, chain) at its root,
 #             and one folder per concrete effect
-#   synth/    the synthesizer: voices built from DaisySP oscillators and envelopes
+#   synth/    the synthesizer: voices built from DaisySP, and the voice pool
 add_library(minerva_core STATIC
     dsp/smoothed_value.h
     effects/delay/delay.cpp
@@ -12,6 +12,8 @@ add_library(minerva_core STATIC
     effects/effect.h
     effects/effect_chain.cpp
     effects/effect_chain.h
+    synth/synth.cpp
+    synth/synth.h
     synth/voice.cpp
     synth/voice.h)
 target_include_directories(minerva_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
