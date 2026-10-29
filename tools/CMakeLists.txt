@@ -9,3 +9,6 @@ target_link_libraries(minerva_offline PUBLIC minerva_core PRIVATE dr_wav minerva
 
 add_executable(minerva_process process_wav.cpp)
 target_link_libraries(minerva_process PRIVATE minerva_offline minerva_warnings)
+
+add_executable(minerva_scale render_scale.cpp)
+target_link_libraries(minerva_scale PRIVATE minerva_offline minerva_warnings)
