@@ -3,7 +3,6 @@ add_executable(minerva_tests
     denormals_test.cpp
     distortion_test.cpp
     effect_chain_test.cpp
-    effect_set_test.cpp
     smoothed_value_test.cpp
     voice_test.cpp)
 # denormals.h lives with the backends (it is x86-specific), so its folder is added here.

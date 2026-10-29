@@ -13,7 +13,7 @@ constexpr int kF1 = 59, kF2 = 60, kF3 = 61, kF4 = 62, kF5 = 63, kF6 = 64;
 
 } // namespace
 
-void apply(const Settings& settings, minerva::EffectSet& effects) {
+void apply(const Settings& settings, Effects& effects) {
     effects.distortion.setDrive(settings.drive);
     effects.delay.setFeedback(settings.feedback);
     effects.delay.setMix(settings.mix);
