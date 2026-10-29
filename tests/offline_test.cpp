@@ -1,4 +1,4 @@
-#include "effect_set.h"
+#include "effects/effect_set.h"
 #include "offline.h"
 #include "wav_io.h"
 

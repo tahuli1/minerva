@@ -1,6 +1,6 @@
 #pragma once
 
-#include "effect_set.h"
+#include "effects/effect_set.h"
 
 namespace cli {
 

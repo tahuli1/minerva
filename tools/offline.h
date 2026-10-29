@@ -1,6 +1,6 @@
 #pragma once
 
-#include "effect.h"
+#include "effects/effect.h"
 #include "wav_io.h"
 
 namespace ukefx {

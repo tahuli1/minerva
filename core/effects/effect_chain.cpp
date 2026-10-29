@@ -1,4 +1,4 @@
-#include "effect_chain.h"
+#include "effects/effect_chain.h"
 
 #include <algorithm>
 

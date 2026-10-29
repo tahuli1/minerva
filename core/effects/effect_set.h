@@ -1,8 +1,8 @@
 #pragma once
 
-#include "effect_chain.h"
-#include "effects/delay.h"
-#include "effects/distortion.h"
+#include "effects/delay/delay.h"
+#include "effects/distortion/distortion.h"
+#include "effects/effect_chain.h"
 
 #include <span>
 #include <string>
