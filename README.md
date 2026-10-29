@@ -7,11 +7,9 @@ from patterns and loops, and shape the sound with effects, live, into headphones
 The project focuses on real-time engineering: hard deadlines, sample-accurate timing,
 no allocation or locking on the audio thread, and measured latency.
 
-**Status:** early development. The engine, the master effect chain (distortion →
-delay), live parameter control and the first synth voice (built on DaisySP) are in
-place; playing the synth from the keyboard, drums, sequencer and looper are next.
-Until the synth is connected, the only sound source is the microphone, if there is
-one, which is how the project started (as `ukefx`, an effects processor for a ukulele).
+**Status:** early development. A 16-voice synth (built on DaisySP) plays from the
+computer keyboard through the master effect chain (distortion → delay); presets,
+drums, sequencer and looper are next.
 
 ## Requirements
 
@@ -33,25 +31,33 @@ cmake --build build --config Release
 build\apps\cli\Release\minerva_cli.exe
 ```
 
-The sound goes through Minerva's fixed effect chain: distortion (warm overdrive),
-then delay (350 ms echo). A microphone is optional: without one the app still runs,
-output only.
+Play the synth from the computer keyboard, laid out like a piano:
 
-While it runs, change the effects from the function keys (the letter keys are kept
-free for playing notes):
+```
+ W E   T Y U   O P       black keys
+A S D F G H J K L ;      white keys: C D E F G A B C D E
+```
 
-| Key | Parameter |
+`A` is middle C. Hold several keys for a chord. The keys are read by position, so
+they work whatever the keyboard language is.
+
+| Key | Action |
 |---|---|
+| `Z` / `X` | octave down / up |
+| `C` / `V` | velocity (loudness of the next notes) down / up |
+| `1` – `4` | waveform: sine, triangle, saw, square |
+| `F7` | distortion on / off (off at start: it makes chords sound harsh) |
 | `F1` / `F2` | distortion drive down / up |
 | `F3` / `F4` | delay feedback down / up |
 | `F5` / `F6` | delay mix down / up |
 | `Esc` | quit (Ctrl+C works too) |
 
-On some keyboards the F keys need the `Fn` key. Changes glide over 20 ms, so they
-don't click.
+On some keyboards the F keys need the `Fn` key. Effect changes glide over 20 ms, so
+they don't click.
 
-Use headphones, and turn the volume down before the first run: with speakers, the
-microphone will pick up the output and feed back.
+A microphone is not needed; it will be used for recording into the looper.
+
+Turn the volume down before the first run.
 
 ## Test
 
