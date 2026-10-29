@@ -14,13 +14,13 @@ constexpr int kRampSamples = 10;
 } // namespace
 
 TEST(SmoothedValue, StartsAtTheInitialValue) {
-    ukefx::SmoothedValue v;
+    minerva::SmoothedValue v;
     v.reset(kSampleRate, kRampSeconds, 0.5f);
     for (int i = 0; i < 20; ++i) EXPECT_EQ(v.next(), 0.5f);
 }
 
 TEST(SmoothedValue, ReachesTheTargetExactlyAfterTheRamp) {
-    ukefx::SmoothedValue v;
+    minerva::SmoothedValue v;
     v.reset(kSampleRate, kRampSeconds, 0.0f);
     v.setTarget(1.0f);
     for (int i = 0; i < kRampSamples - 1; ++i) EXPECT_LT(v.next(), 1.0f);
@@ -29,7 +29,7 @@ TEST(SmoothedValue, ReachesTheTargetExactlyAfterTheRamp) {
 }
 
 TEST(SmoothedValue, MovesInEqualSteps) {
-    ukefx::SmoothedValue v;
+    minerva::SmoothedValue v;
     v.reset(kSampleRate, kRampSeconds, 0.0f);
     v.setTarget(1.0f);
     float previous = v.current();
@@ -42,7 +42,7 @@ TEST(SmoothedValue, MovesInEqualSteps) {
 
 TEST(SmoothedValue, RepeatingTheSameTargetDoesNotRestartTheRamp) {
     // The audio thread calls setTarget() every block, usually with an unchanged value.
-    ukefx::SmoothedValue v;
+    minerva::SmoothedValue v;
     v.reset(kSampleRate, kRampSeconds, 0.0f);
     v.setTarget(1.0f);
     for (int i = 0; i < 5; ++i) v.next();
@@ -52,7 +52,7 @@ TEST(SmoothedValue, RepeatingTheSameTargetDoesNotRestartTheRamp) {
 }
 
 TEST(SmoothedValue, NewTargetMidRampContinuesFromTheCurrentValue) {
-    ukefx::SmoothedValue v;
+    minerva::SmoothedValue v;
     v.reset(kSampleRate, kRampSeconds, 0.0f);
     v.setTarget(1.0f);
     for (int i = 0; i < 5; ++i) v.next(); // now at 0.5
@@ -64,7 +64,7 @@ TEST(SmoothedValue, NewTargetMidRampContinuesFromTheCurrentValue) {
 }
 
 TEST(SmoothedValue, ZeroRampTimeJumpsImmediately) {
-    ukefx::SmoothedValue v;
+    minerva::SmoothedValue v;
     v.reset(kSampleRate, 0.0f, 0.0f);
     v.setTarget(0.7f);
     EXPECT_EQ(v.next(), 0.7f);

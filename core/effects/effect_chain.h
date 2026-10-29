@@ -4,7 +4,7 @@
 
 #include <array>
 
-namespace ukefx {
+namespace minerva {
 
 // Runs effects one after another. It is itself an Effect, so the backend
 // doesn't care whether it runs one effect or a whole chain.
@@ -29,4 +29,4 @@ private:
     int count_ = 0;
 };
 
-} // namespace ukefx
+} // namespace minerva

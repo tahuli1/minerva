@@ -22,26 +22,26 @@ TEST(Offline, ImpulseThroughTheDelayFromWavToWav) {
     // in 128-sample blocks (like the live callback), write the result, read it back.
     // At 48 kHz the default 350 ms delay is 16800 samples: not a multiple of 128, so
     // every echo crosses a block boundary.
-    const std::string inPath = tempPath("ukefx_offline_in.wav");
-    const std::string outPath = tempPath("ukefx_offline_out.wav");
+    const std::string inPath = tempPath("minerva_offline_in.wav");
+    const std::string outPath = tempPath("minerva_offline_out.wav");
     std::string error;
 
-    ukefx::Audio impulse;
+    minerva::Audio impulse;
     impulse.sampleRate = 48000;
     impulse.samples.assign(100, 0.0f);
     impulse.samples[0] = 1.0f;
-    ASSERT_TRUE(ukefx::writeWav(inPath, impulse, error)) << error;
+    ASSERT_TRUE(minerva::writeWav(inPath, impulse, error)) << error;
 
-    auto audio = ukefx::readWav(inPath, error);
+    auto audio = minerva::readWav(inPath, error);
     ASSERT_TRUE(audio) << error;
-    ukefx::EffectSet effects; // delay defaults: 350 ms, feedback 0.4, mix 0.35
-    ukefx::EffectChain chain;
+    minerva::EffectSet effects; // delay defaults: 350 ms, feedback 0.4, mix 0.35
+    minerva::EffectChain chain;
     const std::vector<std::string_view> names{"delay"};
-    ASSERT_EQ(ukefx::buildChain(effects, names, chain), "");
-    ukefx::processOffline(chain, *audio, 128, 1.0f);
-    ASSERT_TRUE(ukefx::writeWav(outPath, *audio, error)) << error;
+    ASSERT_EQ(minerva::buildChain(effects, names, chain), "");
+    minerva::processOffline(chain, *audio, 128, 1.0f);
+    ASSERT_TRUE(minerva::writeWav(outPath, *audio, error)) << error;
 
-    const auto result = ukefx::readWav(outPath, error);
+    const auto result = minerva::readWav(outPath, error);
     ASSERT_TRUE(result) << error;
     std::filesystem::remove(inPath);
     std::filesystem::remove(outPath);

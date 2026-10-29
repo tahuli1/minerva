@@ -15,19 +15,19 @@ constexpr float kTailSeconds = 2.0f;   // room for the delay's echoes to fade ou
 
 } // namespace
 
-// Usage: ukefx_process <in.wav> <out.wav> [effect ...]
-// Runs a WAV file through the same effects as ukefx_cli, with no audio device.
+// Usage: minerva_process <in.wav> <out.wav> [effect ...]
+// Runs a WAV file through the same effects as minerva_cli, with no audio device.
 // With no effects given the chain is distortion -> delay, like the CLI.
 int main(int argc, char** argv) {
     if (argc < 3) {
-        std::fprintf(stderr, "Usage: ukefx_process <in.wav> <out.wav> [effect ...]\n"
+        std::fprintf(stderr, "Usage: minerva_process <in.wav> <out.wav> [effect ...]\n"
                              "Known effects: %s\n",
-                     std::string(ukefx::EffectSet::kKnownNames).c_str());
+                     std::string(minerva::EffectSet::kKnownNames).c_str());
         return 1;
     }
 
     std::string error;
-    auto audio = ukefx::readWav(argv[1], error);
+    auto audio = minerva::readWav(argv[1], error);
     if (!audio) {
         std::fprintf(stderr, "%s\n", error.c_str());
         return 1;
@@ -35,17 +35,17 @@ int main(int argc, char** argv) {
 
     std::vector<std::string_view> names(argv + 3, argv + argc);
     if (names.empty()) names = {"distortion", "delay"};
-    ukefx::EffectSet effects;
-    ukefx::EffectChain chain;
-    if (error = ukefx::buildChain(effects, names, chain); !error.empty()) {
+    minerva::EffectSet effects;
+    minerva::EffectChain chain;
+    if (error = minerva::buildChain(effects, names, chain); !error.empty()) {
         std::fprintf(stderr, "%s\n", error.c_str());
         return 1;
     }
 
     const auto inputSamples = audio->samples.size();
-    ukefx::processOffline(chain, *audio, kBlockSize, kTailSeconds);
+    minerva::processOffline(chain, *audio, kBlockSize, kTailSeconds);
 
-    if (!ukefx::writeWav(argv[2], *audio, error)) {
+    if (!minerva::writeWav(argv[2], *audio, error)) {
         std::fprintf(stderr, "%s\n", error.c_str());
         return 1;
     }

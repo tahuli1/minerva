@@ -11,7 +11,7 @@ namespace {
 // A 1-sample echo with high feedback: the tail decays by 0.9 every sample and
 // drops through the denormal range (~1e-38 down to ~1e-45) within ~1000 samples.
 int countDenormalsInDelayTail() {
-    ukefx::Delay delay;
+    minerva::Delay delay;
     delay.setTimeMs(1.0f);
     delay.setFeedback(0.9f);
     delay.setMix(1.0f);
@@ -34,6 +34,6 @@ TEST(Denormals, DelayTailProducesThemByDefault) {
 }
 
 TEST(Denormals, ScopedNoDenormalsFlushesThemToZero) {
-    ukefx::ScopedNoDenormals noDenormals;
+    minerva::ScopedNoDenormals noDenormals;
     EXPECT_EQ(countDenormalsInDelayTail(), 0);
 }

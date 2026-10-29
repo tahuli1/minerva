@@ -8,7 +8,7 @@
 #include <string>
 #include <string_view>
 
-namespace ukefx {
+namespace minerva {
 
 // One instance of every effect, findable by name, so an app can build a chain from
 // user input (the command line now, presets later). Not RT: used while setting up.
@@ -34,4 +34,4 @@ struct EffectSet {
 std::string buildChain(EffectSet& effects, std::span<const std::string_view> names,
                        EffectChain& chain);
 
-} // namespace ukefx
+} // namespace minerva

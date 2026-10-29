@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace ukefx {
+namespace minerva {
 
 void processOffline(Effect& effect, Audio& audio, int blockSize, float tailSeconds) {
     const auto tail = static_cast<std::size_t>(tailSeconds * static_cast<float>(audio.sampleRate));
@@ -18,4 +18,4 @@ void processOffline(Effect& effect, Audio& audio, int blockSize, float tailSecon
     }
 }
 
-} // namespace ukefx
+} // namespace minerva

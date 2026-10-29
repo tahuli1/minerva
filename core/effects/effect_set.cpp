@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <array>
 
-namespace ukefx {
+namespace minerva {
 
 Effect* EffectSet::find(std::string_view name) {
     if (name == "distortion") return &distortion;
@@ -28,4 +28,4 @@ std::string buildChain(EffectSet& effects, std::span<const std::string_view> nam
     return {};
 }
 
-} // namespace ukefx
+} // namespace minerva
