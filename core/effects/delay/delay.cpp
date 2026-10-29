@@ -1,25 +1,20 @@
 #include "effects/delay/delay.h"
 
 #include <algorithm>
-#include <bit>
 #include <cmath>
 
 namespace minerva {
 
 void Delay::prepare(int sampleRate, int /*maxBlockSize*/) {
     sampleRate_ = sampleRate;
-    // Round up to a power of two so wrapping is a bitwise AND instead of a modulo (a division).
-    const auto needed = static_cast<std::size_t>(std::ceil(kMaxTimeSeconds * sampleRate)) + 1;
-    buffer_.assign(std::bit_ceil(needed), 0.0f);
-    mask_ = buffer_.size() - 1;
-    write_ = 0;
+    line_ = std::make_unique<daisysp::DelayLine<float, kMaxDelaySamples>>();
+    line_->Init();
     feedbackSmoothed_.reset(sampleRate, kParamRampSeconds, feedback_.load(std::memory_order_relaxed));
     mixSmoothed_.reset(sampleRate, kParamRampSeconds, mix_.load(std::memory_order_relaxed));
 }
 
 void Delay::setFeedback(float feedback) {
-    // At 1 or above every repeat is as loud as the last or louder, and the signal
-    // grows without bound. Clamping here keeps that out of the audio thread.
+    // At 1 or above every repeat is at least as loud as the last: the signal grows forever.
     feedback_.store(std::clamp(feedback, 0.0f, 0.95f), std::memory_order_relaxed);
 }
 
@@ -30,22 +25,19 @@ void Delay::setMix(float mix) {
 void Delay::process(const float* in, float* out, int n) {
     feedbackSmoothed_.setTarget(feedback_.load(std::memory_order_relaxed));
     mixSmoothed_.setTarget(mix_.load(std::memory_order_relaxed));
-    const float timeMs = timeMs_.load(std::memory_order_relaxed);
 
-    // At least 1 sample: reading the slot we are about to write would return audio
-    // from a full buffer ago. At most mask_ so we never read past the oldest sample.
-    const auto delay = std::clamp<std::size_t>(
-        static_cast<std::size_t>(std::lround(timeMs * 0.001f * static_cast<float>(sampleRate_))),
-        1, mask_);
+    // At least 1 sample: 0 would read the slot about to be written (the oldest audio).
+    const float samples = timeMs_.load(std::memory_order_relaxed) * 0.001f * static_cast<float>(sampleRate_);
+    line_->SetDelay(std::clamp<std::size_t>(static_cast<std::size_t>(std::lround(samples)), 1,
+                                            kMaxDelaySamples - 1));
 
     for (int i = 0; i < n; ++i) {
         const float feedback = feedbackSmoothed_.next();
         const float mix = mixSmoothed_.next();
-        const float dry = in[i]; // Read before writing out[i]: in and out may alias.
-        const float wet = buffer_[(write_ - delay) & mask_];
-        buffer_[write_] = dry + feedback * wet;
+        const float dry = in[i]; // read before writing out[i]: in and out may alias
+        const float wet = line_->Read();
+        line_->Write(dry + feedback * wet);
         out[i] = (1.0f - mix) * dry + mix * wet;
-        write_ = (write_ + 1) & mask_;
     }
 }
 
