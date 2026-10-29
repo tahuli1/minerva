@@ -8,7 +8,7 @@
 
 class RtAudio;
 
-namespace ukefx {
+namespace minerva {
 
 // Mono in, mono out, n frames. Runs on the audio thread, so it must follow the RT rules.
 // A plain function pointer (not std::function) so calling it can never allocate.
@@ -65,4 +65,4 @@ private:
     static_assert(std::atomic<std::uint64_t>::is_always_lock_free);
 };
 
-} // namespace ukefx
+} // namespace minerva

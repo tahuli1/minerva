@@ -12,7 +12,7 @@ struct Settings {
     float mix = 0.35f;
 };
 
-void apply(const Settings& settings, ukefx::EffectSet& effects);
+void apply(const Settings& settings, minerva::EffectSet& effects);
 
 // Returns true if the key changed a setting.
 bool handleKey(int key, Settings& settings);

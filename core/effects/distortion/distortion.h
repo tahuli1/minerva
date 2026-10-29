@@ -5,7 +5,7 @@
 
 #include <atomic>
 
-namespace ukefx {
+namespace minerva {
 
 // Soft-clipping distortion: out = level * tanh(drive * in).
 // tanh is ~linear for small inputs and saturates smoothly towards +/-1,
@@ -33,4 +33,4 @@ private:
     static_assert(std::atomic<float>::is_always_lock_free);
 };
 
-} // namespace ukefx
+} // namespace minerva

@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-namespace ukefx {
+namespace minerva {
 
 RtAudioBackend::RtAudioBackend()
     : audio_(std::make_unique<RtAudio>(RtAudio::WINDOWS_WASAPI)) {}
@@ -97,4 +97,4 @@ int RtAudioBackend::audioCallback(void* out, void* in, unsigned int nFrames, dou
     return 0;
 }
 
-} // namespace ukefx
+} // namespace minerva

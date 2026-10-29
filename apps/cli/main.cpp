@@ -29,12 +29,12 @@ BOOL WINAPI onConsoleCtrl(DWORD type) {
 
 // Audio thread. `user` is the effect to run; a virtual call has a small, fixed cost.
 void runEffect(const float* in, float* out, int n, void* user) {
-    static_cast<ukefx::Effect*>(user)->process(in, out, n);
+    static_cast<minerva::Effect*>(user)->process(in, out, n);
 }
 
 // Main thread, not RT: polling the keyboard 50 times a second costs nothing and
 // keeps the loop simple. Every change goes to the effects through their atomics.
-void runControlLoop(cli::Settings& settings, ukefx::EffectSet& effects) {
+void runControlLoop(cli::Settings& settings, minerva::EffectSet& effects) {
     cli::printHelp();
     cli::printSettings(settings);
     while (!g_quit.load()) {
@@ -67,32 +67,32 @@ std::string join(const std::vector<std::string_view>& names) {
 
 } // namespace
 
-// Usage: ukefx_cli [effect ...]   effects run in the order given; known: distortion, delay
-//        ukefx_cli                same as: ukefx_cli distortion delay
+// Usage: minerva_cli [effect ...]   effects run in the order given; known: distortion, delay
+//        minerva_cli                same as: minerva_cli distortion delay
 int main(int argc, char** argv) {
     SetConsoleCtrlHandler(onConsoleCtrl, TRUE);
 
-    ukefx::EffectSet effects;
+    minerva::EffectSet effects;
     cli::Settings settings;
     cli::apply(settings, effects); // Before prepare(), so the smoothers start at these values.
 
     std::vector<std::string_view> names(argv + 1, argv + argc);
     if (names.empty()) names = {"distortion", "delay"};
-    ukefx::EffectChain chain;
-    if (const std::string error = ukefx::buildChain(effects, names, chain); !error.empty()) {
+    minerva::EffectChain chain;
+    if (const std::string error = minerva::buildChain(effects, names, chain); !error.empty()) {
         std::fprintf(stderr, "%s\n", error.c_str());
         return 1;
     }
 
     // Declared after the effects so it is destroyed first: the stream stops
     // before the effects it calls into go away.
-    ukefx::RtAudioBackend backend;
+    minerva::RtAudioBackend backend;
     if (!backend.open({.sampleRate = 48000, .bufferFrames = 128}, runEffect, &chain)) {
         std::fprintf(stderr, "Failed to open audio stream: %s\n", backend.lastError().c_str());
         return 1;
     }
 
-    const ukefx::StreamInfo& info = backend.info();
+    const minerva::StreamInfo& info = backend.info();
     std::printf("API:           %s\n", info.api.c_str());
     std::printf("Input device:  %s (1 channel)\n", info.inputDevice.c_str());
     std::printf("Output device: %s (%u channels)\n", info.outputDevice.c_str(), info.outputChannels);
