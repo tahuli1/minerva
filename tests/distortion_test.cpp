@@ -98,3 +98,34 @@ TEST(Distortion, DriveChangeGlidesInsteadOfJumping) {
         EXPECT_LT(std::abs(out[i] - out[i - 1]), change / 50.0f) << "jump at " << i;
     EXPECT_FLOAT_EQ(out[100 + 960], target);
 }
+
+TEST(Distortion, WhenOffTheInputPassesThroughUnchanged) {
+    minerva::Distortion d;
+    d.setEnabled(false);
+    configure(d, 0.9f, 0.3f);
+    std::array<float, kBlock> in{-1.0f, -0.5f, -0.1f, 0.0f, 0.1f, 0.3f, 0.7f, 1.0f}, out{};
+    d.process(in.data(), out.data(), kBlock);
+    for (int i = 0; i < kBlock; ++i) EXPECT_EQ(out[i], in[i]);
+}
+
+TEST(Distortion, SwitchingOnCrossfadesInsteadOfJumping) {
+    // Off -> on on a steady input: small steps over 20 ms (960 samples), then exactly
+    // the distorted output.
+    const float input = 0.5f;
+    minerva::Distortion d, on;
+    d.setEnabled(false);
+    configure(d, 0.9f, 1.0f);
+    configure(on, 0.9f, 1.0f);
+    std::vector<float> in(2000, input), out(2000);
+    d.process(in.data(), out.data(), 100);
+    d.setEnabled(true);
+    d.process(in.data() + 100, out.data() + 100, 1900);
+    float target = 0.0f;
+    on.process(&input, &target, 1);
+
+    const float change = std::abs(target - out[99]);
+    ASSERT_GT(change, 0.1f);
+    for (int i = 100; i < 2000; ++i)
+        EXPECT_LT(std::abs(out[i] - out[i - 1]), change / 50.0f) << "jump at " << i;
+    EXPECT_FLOAT_EQ(out[100 + 960], target);
+}
