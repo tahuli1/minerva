@@ -81,7 +81,12 @@ void Voice::release() { gate_ = false; }
 
 void Voice::render(float* out, int n) {
     if (!isActive()) return;
-    for (int i = 0; i < n; ++i) out[i] += velocity_ * oscillator_.Process() * envelope_.Process(gate_);
+    float level = level_;
+    for (int i = 0; i < n; ++i) {
+        level = envelope_.Process(gate_);
+        out[i] += velocity_ * oscillator_.Process() * level;
+    }
+    level_ = level;
 }
 
 } // namespace minerva
