@@ -63,10 +63,11 @@ FetchContent_MakeAvailable(daisysp)
 set(DAISYSP_SRC ${daisysp_SOURCE_DIR}/Source)
 add_library(daisysp STATIC
     ${DAISYSP_SRC}/Control/adsr.cpp
+    ${DAISYSP_SRC}/Effects/overdrive.cpp
     ${DAISYSP_SRC}/Synthesis/oscillator.cpp)
 target_include_directories(daisysp SYSTEM PUBLIC ${DAISYSP_SRC})
 # Its sources include each other by bare file name, from these folders.
-target_include_directories(daisysp PRIVATE ${DAISYSP_SRC}/Control ${DAISYSP_SRC}/Synthesis
+target_include_directories(daisysp PRIVATE ${DAISYSP_SRC}/Control ${DAISYSP_SRC}/Effects ${DAISYSP_SRC}/Synthesis
                                            ${DAISYSP_SRC}/Utility)
 # MSVC only defines M_E, M_PI etc. when asked to.
 target_compile_definitions(daisysp PRIVATE _USE_MATH_DEFINES)
