@@ -4,7 +4,7 @@
 #include <bit>
 #include <cmath>
 
-namespace ukefx {
+namespace minerva {
 
 void Delay::prepare(int sampleRate, int /*maxBlockSize*/) {
     sampleRate_ = sampleRate;
@@ -49,4 +49,4 @@ void Delay::process(const float* in, float* out, int n) {
     }
 }
 
-} // namespace ukefx
+} // namespace minerva

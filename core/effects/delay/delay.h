@@ -7,7 +7,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace ukefx {
+namespace minerva {
 
 // Feedback delay (echo) on a circular buffer.
 // Each repeat is the previous one scaled by `feedback`; `mix` blends dry and wet.
@@ -42,4 +42,4 @@ private:
     std::atomic<float> mix_{0.35f};
 };
 
-} // namespace ukefx
+} // namespace minerva

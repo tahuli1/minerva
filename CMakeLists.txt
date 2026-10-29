@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(ukefx LANGUAGES CXX)
+project(minerva LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,11 +10,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Interface target that carries only compile flags, no code. Linking it applies the
 # flags to that target alone, so our code gets strict warnings while third-party
 # code (RtAudio) is built with its own defaults instead of flooding the build log.
-add_library(ukefx_warnings INTERFACE)
+add_library(minerva_warnings INTERFACE)
 if(MSVC)
-    target_compile_options(ukefx_warnings INTERFACE /W4 /permissive- /utf-8)
+    target_compile_options(minerva_warnings INTERFACE /W4 /permissive- /utf-8)
 else()
-    target_compile_options(ukefx_warnings INTERFACE -Wall -Wextra -Wpedantic)
+    target_compile_options(minerva_warnings INTERFACE -Wall -Wextra -Wpedantic)
 endif()
 
 include(FetchContent)

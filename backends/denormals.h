@@ -4,7 +4,7 @@
 // CPU-specific: an ARM port (STM32) would set the FZ bit in FPSCR instead.
 #include <xmmintrin.h>
 
-namespace ukefx {
+namespace minerva {
 
 // Turns on Flush-To-Zero and Denormals-Are-Zero for the current thread while in scope.
 //
@@ -28,4 +28,4 @@ private:
     unsigned int saved_;
 };
 
-} // namespace ukefx
+} // namespace minerva

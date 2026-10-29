@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ukefx {
+namespace minerva {
 
 // Base class for every effect in the chain. Mono, float samples in [-1, 1].
 class Effect {
@@ -16,4 +16,4 @@ public:
     virtual ~Effect() = default;
 };
 
-} // namespace ukefx
+} // namespace minerva

@@ -5,7 +5,7 @@
 #define DR_WAV_IMPLEMENTATION
 #include <dr_wav.h>
 
-namespace ukefx {
+namespace minerva {
 
 std::optional<Audio> readWav(const std::string& path, std::string& error) {
     drwav wav;
@@ -56,4 +56,4 @@ bool writeWav(const std::string& path, const Audio& audio, std::string& error) {
     return true;
 }
 
-} // namespace ukefx
+} // namespace minerva

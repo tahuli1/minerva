@@ -1,15 +1,17 @@
-# ukefx
+# Minerva
 
-A real-time audio effects engine for acoustic ukulele, written in C++20 on Windows.
+A small real-time music studio for Windows, written in C++20: play melodies and
+chords on synthesized instruments from the computer keyboard, add drums, build songs
+from patterns and loops, and shape the sound with effects, live, into headphones.
 
-Audio comes in from a microphone, passes through an effect chain, and goes out to
-headphones live. The project focuses on real-time engineering: hard deadlines,
+The project focuses on real-time engineering: hard deadlines, sample-accurate timing,
 no allocation or locking on the audio thread, and measured latency.
 
-**Status:** early development. The app runs the microphone through a chain of
-effects (distortion, delay) to the headphones, with live parameter control, and the
-same effects can process WAV files offline. More effects, measurements and a GUI are
-coming next.
+**Status:** early development. The engine, effect chain (distortion, delay), live
+parameter control and offline WAV processing are in place; the synthesizer, drums,
+sequencer and looper are next. Until the synth exists, the app runs the microphone
+through the effects, which is how the project started (as `ukefx`, an effects
+processor for a ukulele).
 
 ## Requirements
 
@@ -28,15 +30,15 @@ cmake --build build --config Release
 ## Run
 
 ```
-build\apps\cli\Release\ukefx_cli.exe [effect ...]
+build\apps\cli\Release\minerva_cli.exe [effect ...]
 ```
 
 Effects run in the order given. Known effects: `distortion` (warm overdrive) and
 `delay` (350 ms echo). With no arguments it runs `distortion delay`. Examples:
 
 ```
-build\apps\cli\Release\ukefx_cli.exe delay
-build\apps\cli\Release\ukefx_cli.exe delay distortion
+build\apps\cli\Release\minerva_cli.exe delay
+build\apps\cli\Release\minerva_cli.exe delay distortion
 ```
 
 While it runs, change parameters from the keyboard (lowercase lowers, uppercase raises):
@@ -56,7 +58,7 @@ microphone will pick up the output and feed back.
 ## Process a WAV file offline
 
 ```
-build\tools\Release\ukefx_process.exe <in.wav> <out.wav> [effect ...]
+build\tools\Release\minerva_process.exe <in.wav> <out.wav> [effect ...]
 ```
 
 Runs a recording through the same effects as the live app, in the same 128-sample
@@ -73,7 +75,7 @@ ctest --test-dir build -C Release
 ## Layout
 
 ```
-core/       effects and DSP, portable C++ with no OS headers
+core/       DSP and effects, portable C++ with no OS headers
 backends/   audio device I/O (currently RtAudio over WASAPI)
 apps/cli/   command-line app
 tools/      offline and measurement tools

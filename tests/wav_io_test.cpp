@@ -15,7 +15,7 @@ public:
     TempWav() {
         const auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
         path_ = (std::filesystem::temp_directory_path() /
-                 (std::string("ukefx_") + info->test_suite_name() + "_" + info->name() + ".wav"))
+                 (std::string("minerva_") + info->test_suite_name() + "_" + info->name() + ".wav"))
                     .string();
     }
     ~TempWav() { std::filesystem::remove(path_); }
@@ -29,13 +29,13 @@ private:
 
 TEST(WavIo, RoundTripIsExact) {
     TempWav file;
-    ukefx::Audio original;
+    minerva::Audio original;
     original.sampleRate = 44100;
     for (int i = 0; i < 1000; ++i) original.samples.push_back(0.5f * std::sin(0.01f * i));
 
     std::string error;
-    ASSERT_TRUE(ukefx::writeWav(file.path(), original, error)) << error;
-    const auto loaded = ukefx::readWav(file.path(), error);
+    ASSERT_TRUE(minerva::writeWav(file.path(), original, error)) << error;
+    const auto loaded = minerva::readWav(file.path(), error);
     ASSERT_TRUE(loaded) << error;
 
     EXPECT_EQ(loaded->sampleRate, 44100);
@@ -57,13 +57,13 @@ TEST(WavIo, StereoIsAveragedToMono) {
     drwav_uninit(&wav);
 
     std::string error;
-    const auto loaded = ukefx::readWav(file.path(), error);
+    const auto loaded = minerva::readWav(file.path(), error);
     ASSERT_TRUE(loaded) << error;
     EXPECT_EQ(loaded->samples, (std::vector<float>{0.5f, 0.0f, -0.75f}));
 }
 
 TEST(WavIo, MissingFileReportsAnError) {
     std::string error;
-    EXPECT_FALSE(ukefx::readWav("this/file/does/not/exist.wav", error));
+    EXPECT_FALSE(minerva::readWav("this/file/does/not/exist.wav", error));
     EXPECT_NE(error.find("exist.wav"), std::string::npos);
 }

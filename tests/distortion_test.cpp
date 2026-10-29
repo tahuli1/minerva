@@ -11,7 +11,7 @@ namespace {
 constexpr int kSampleRate = 48000;
 constexpr int kBlock = 8;
 
-void configure(ukefx::Distortion& d, float drive, float level) {
+void configure(minerva::Distortion& d, float drive, float level) {
     d.setDrive(drive);
     d.setLevel(level);
     d.prepare(kSampleRate, kBlock);
@@ -20,7 +20,7 @@ void configure(ukefx::Distortion& d, float drive, float level) {
 } // namespace
 
 TEST(Distortion, SilenceStaysSilent) {
-    ukefx::Distortion d;
+    minerva::Distortion d;
     configure(d, 20.0f, 1.0f);
     std::array<float, kBlock> in{}, out{};
     out.fill(1.0f);
@@ -31,7 +31,7 @@ TEST(Distortion, SilenceStaysSilent) {
 TEST(Distortion, OutputNeverExceedsLevel) {
     // Even absurd input must stay within +/-level: this is what protects the ears.
     const float level = 0.5f;
-    ukefx::Distortion d;
+    minerva::Distortion d;
     configure(d, 50.0f, level);
     std::array<float, kBlock> in{-100.0f, -1.0f, -0.1f, 0.0f, 0.1f, 1.0f, 100.0f, 1e6f};
     std::array<float, kBlock> out{};
@@ -41,7 +41,7 @@ TEST(Distortion, OutputNeverExceedsLevel) {
 
 TEST(Distortion, IsOddSymmetric) {
     // f(-x) == -f(x): no DC offset and only odd harmonics, like a symmetric tube stage.
-    ukefx::Distortion d;
+    minerva::Distortion d;
     configure(d, 8.0f, 1.0f);
     std::array<float, kBlock> pos{0.01f, 0.05f, 0.1f, 0.2f, 0.4f, 0.6f, 0.8f, 1.0f};
     std::array<float, kBlock> neg{}, outPos{}, outNeg{};
@@ -54,7 +54,7 @@ TEST(Distortion, IsOddSymmetric) {
 TEST(Distortion, SmallSignalsAreAmplifiedLinearly) {
     // tanh(u) ~= u for small u, so quiet playing just gets louder by `drive`.
     const float drive = 4.0f;
-    ukefx::Distortion d;
+    minerva::Distortion d;
     configure(d, drive, 1.0f);
     std::array<float, kBlock> in{}, out{};
     in.fill(1e-3f);
@@ -64,7 +64,7 @@ TEST(Distortion, SmallSignalsAreAmplifiedLinearly) {
 
 TEST(Distortion, InPlaceMatchesOutOfPlace) {
     // The effect chain will process in place, so in == out must work.
-    ukefx::Distortion d;
+    minerva::Distortion d;
     configure(d, 10.0f, 0.8f);
     std::array<float, kBlock> in{-1.0f, -0.5f, -0.1f, 0.0f, 0.1f, 0.3f, 0.7f, 1.0f};
     std::array<float, kBlock> expected{};
@@ -76,7 +76,7 @@ TEST(Distortion, InPlaceMatchesOutOfPlace) {
 TEST(Distortion, DriveChangeGlidesInsteadOfJumping) {
     // Without smoothing, jumping from drive 1 to 20 on a steady 0.05 input would make
     // the output leap from ~0.05 to ~0.76 in one sample: an audible click.
-    ukefx::Distortion d;
+    minerva::Distortion d;
     configure(d, 1.0f, 1.0f);
     std::vector<float> in(2000, 0.05f), out(2000);
     d.process(in.data(), out.data(), 100);

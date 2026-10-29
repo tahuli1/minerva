@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace ukefx {
+namespace minerva {
 
 // Mono audio held in memory. Offline only: unlike the audio thread, this code
 // allocates freely.
@@ -22,4 +22,4 @@ std::optional<Audio> readWav(const std::string& path, std::string& error);
 // 16-bit), so a test can write a file, read it back and compare values exactly.
 bool writeWav(const std::string& path, const Audio& audio, std::string& error);
 
-} // namespace ukefx
+} // namespace minerva
