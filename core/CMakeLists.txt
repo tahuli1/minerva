@@ -6,6 +6,8 @@ add_library(ukefx_core STATIC
     effect.h
     effect_chain.cpp
     effect_chain.h
+    effect_set.cpp
+    effect_set.h
     effects/delay.cpp
     effects/delay.h
     effects/distortion.cpp
