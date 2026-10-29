@@ -8,10 +8,10 @@ The project focuses on real-time engineering: hard deadlines, sample-accurate ti
 no allocation or locking on the audio thread, and measured latency.
 
 **Status:** early development. The engine, effect chain (distortion, delay), live
-parameter control, offline rendering to WAV and the first synth voice are in place;
-the full synthesizer, drums, sequencer and looper are next. Until the synth exists, the app runs the microphone
-through the effects, which is how the project started (as `ukefx`, an effects
-processor for a ukulele).
+parameter control and the first synth voice (built on DaisySP) are in place; the full
+synthesizer, drums, sequencer and looper are next. Until the synth is playable, the
+app runs the microphone through the effects, which is how the project started (as
+`ukefx`, an effects processor for a ukulele).
 
 ## Requirements
 
@@ -54,16 +54,6 @@ Changes glide over 20 ms, so they don't click.
 
 Use headphones, and turn the volume down before the first run: with speakers, the
 microphone will pick up the output and feed back.
-
-## Hear the synth voice
-
-```
-build\tools\Release\minerva_scale.exe <out.wav> <sine|triangle|saw|square> [octave] [--no-aa]
-```
-
-Renders a C major scale with one synth voice (oscillator + ADSR envelope), half a
-second per note. `--no-aa` turns anti-aliasing (PolyBLEP) off; compare both in a high
-octave, e.g. `6`, to hear the difference.
 
 ## Test
 

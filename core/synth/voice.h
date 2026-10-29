@@ -26,8 +26,6 @@ public:
     void prepare(int sampleRate);
     void setWaveform(Waveform waveform);
     void setEnvelope(const AdsrParams& params);
-    // Off only to hear the difference anti-aliasing (PolyBLEP) makes (the scale tool).
-    void setAntiAliasing(bool on);
 
     // RT. `note` is a MIDI-style note number (60 = middle C, 69 = A 440 Hz);
     // `velocity` is the loudness, 0..1.
@@ -53,7 +51,6 @@ private:
     daisysp::Adsr envelope_;
     AdsrParams envelopeParams_;
     Waveform waveform_ = Waveform::Sine;
-    bool antiAliasing_ = true;
     bool gate_ = false; // true while the key is held
     int note_ = -1;
     float velocity_ = 1.0f;

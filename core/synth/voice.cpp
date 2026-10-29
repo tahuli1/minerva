@@ -37,19 +37,16 @@ void Voice::setWaveform(Waveform waveform) {
     applyWaveform();
 }
 
-void Voice::setAntiAliasing(bool on) {
-    antiAliasing_ = on;
-    applyWaveform();
-}
-
 void Voice::applyWaveform() {
+    // The PolyBLEP variants round off the sudden jumps of saw and square (and the
+    // corners of triangle), which would otherwise alias into harsh tones at high notes.
     using O = daisysp::Oscillator;
     int shape = O::WAVE_SIN;
     switch (waveform_) {
     case Waveform::Sine: shape = O::WAVE_SIN; break;
-    case Waveform::Triangle: shape = antiAliasing_ ? O::WAVE_POLYBLEP_TRI : O::WAVE_TRI; break;
-    case Waveform::Saw: shape = antiAliasing_ ? O::WAVE_POLYBLEP_SAW : O::WAVE_SAW; break;
-    case Waveform::Square: shape = antiAliasing_ ? O::WAVE_POLYBLEP_SQUARE : O::WAVE_SQUARE; break;
+    case Waveform::Triangle: shape = O::WAVE_POLYBLEP_TRI; break;
+    case Waveform::Saw: shape = O::WAVE_POLYBLEP_SAW; break;
+    case Waveform::Square: shape = O::WAVE_POLYBLEP_SQUARE; break;
     }
     oscillator_.SetWaveform(static_cast<uint8_t>(shape)); // DaisySP takes the id as a byte
 }
