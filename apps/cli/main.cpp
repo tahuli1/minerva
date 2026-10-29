@@ -5,13 +5,15 @@
 #include <conio.h>
 
 #include "controls.h"
-#include "effect_chain.h"
+#include "effects/effect_chain.h"
+#include "effects/effect_set.h"
 #include "rtaudio/rtaudio_backend.h"
 
 #include <atomic>
 #include <cstdio>
-#include <cstring>
 #include <string>
+#include <string_view>
+#include <vector>
 
 namespace {
 
@@ -32,7 +34,7 @@ void runEffect(const float* in, float* out, int n, void* user) {
 
 // Main thread, not RT: polling the keyboard 50 times a second costs nothing and
 // keeps the loop simple. Every change goes to the effects through their atomics.
-void runControlLoop(cli::Settings& settings, cli::Effects& effects) {
+void runControlLoop(cli::Settings& settings, ukefx::EffectSet& effects) {
     cli::printHelp();
     cli::printSettings(settings);
     while (!g_quit.load()) {
@@ -54,29 +56,13 @@ void runControlLoop(cli::Settings& settings, cli::Effects& effects) {
     std::printf("\n");
 }
 
-// Not RT. Adds the effects named on the command line to the chain, in order.
-// Each effect object can appear once: adding it twice would make both slots share
-// one set of state (e.g. one delay buffer written twice per sample).
-bool buildChain(int argc, char** argv, cli::Effects& effects, ukefx::EffectChain& chain,
-                std::string& names) {
-    bool used[2] = {false, false};
-    for (int i = 1; i < argc; ++i) {
-        const bool isDistortion = std::strcmp(argv[i], "distortion") == 0;
-        const bool isDelay = std::strcmp(argv[i], "delay") == 0;
-        if (!isDistortion && !isDelay) {
-            std::fprintf(stderr, "Unknown effect '%s'. Known effects: distortion, delay\n", argv[i]);
-            return false;
-        }
-        bool& wasUsed = used[isDelay ? 1 : 0];
-        if (wasUsed) {
-            std::fprintf(stderr, "Effect '%s' can only appear once\n", argv[i]);
-            return false;
-        }
-        wasUsed = true;
-        chain.add(isDelay ? static_cast<ukefx::Effect&>(effects.delay) : effects.distortion);
-        names += names.empty() ? argv[i] : std::string(" -> ") + argv[i];
+std::string join(const std::vector<std::string_view>& names) {
+    std::string joined;
+    for (std::string_view name : names) {
+        if (!joined.empty()) joined += " -> ";
+        joined += name;
     }
-    return true;
+    return joined;
 }
 
 } // namespace
@@ -86,17 +72,17 @@ bool buildChain(int argc, char** argv, cli::Effects& effects, ukefx::EffectChain
 int main(int argc, char** argv) {
     SetConsoleCtrlHandler(onConsoleCtrl, TRUE);
 
-    cli::Effects effects;
+    ukefx::EffectSet effects;
     cli::Settings settings;
-    cli::apply(settings, effects);     // Before prepare(), so the smoothers start at these values.
-    effects.distortion.setLevel(0.3f); // tanh saturates near full scale; keep headphones safe.
+    cli::apply(settings, effects); // Before prepare(), so the smoothers start at these values.
 
+    std::vector<std::string_view> names(argv + 1, argv + argc);
+    if (names.empty()) names = {"distortion", "delay"};
     ukefx::EffectChain chain;
-    std::string names;
-    char* defaultArgs[] = {argv[0], const_cast<char*>("distortion"), const_cast<char*>("delay")};
-    const bool ok = argc > 1 ? buildChain(argc, argv, effects, chain, names)
-                             : buildChain(3, defaultArgs, effects, chain, names);
-    if (!ok) return 1;
+    if (const std::string error = ukefx::buildChain(effects, names, chain); !error.empty()) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return 1;
+    }
 
     // Declared after the effects so it is destroyed first: the stream stops
     // before the effects it calls into go away.
@@ -114,7 +100,7 @@ int main(int argc, char** argv) {
     std::printf("Buffer size:   %u frames (%.2f ms)\n", info.bufferFrames,
                 1000.0 * info.bufferFrames / info.sampleRate);
     std::printf("Reported stream latency: %ld frames\n", info.latencyFrames);
-    std::printf("Effects:       %s\n", names.c_str());
+    std::printf("Effects:       %s\n", join(names).c_str());
 
     // Prepare with the buffer size the device actually gave us, before audio starts.
     // This is where the delay allocates its 2-second buffer.
