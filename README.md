@@ -6,8 +6,10 @@ Audio comes in from a microphone, passes through an effect chain, and goes out t
 headphones live. The project focuses on real-time engineering: hard deadlines,
 no allocation or locking on the audio thread, and measured latency.
 
-**Status:** early development. Right now the app runs the microphone through a
-distortion effect to the headphones. More effects, measurements and a GUI are coming next.
+**Status:** early development. The app runs the microphone through a chain of
+effects (distortion, delay) to the headphones, with live parameter control, and the
+same effects can process WAV files offline. More effects, measurements and a GUI are
+coming next.
 
 ## Requirements
 
