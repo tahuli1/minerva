@@ -19,6 +19,8 @@ namespace {
 
 std::atomic<bool> g_quit{false};
 
+constexpr int kEsc = 27;
+
 // Windows runs console control handlers on their own thread, so a plain atomic
 // store is all that's needed; the main loop sees it within one poll.
 BOOL WINAPI onConsoleCtrl(DWORD type) {
@@ -42,13 +44,11 @@ void runControlLoop(cli::Settings& settings, minerva::EffectSet& effects) {
             Sleep(20);
             continue;
         }
-        const int key = _getch();
-        if (key == 0 || key == 0xE0) { // arrow/function keys arrive as two codes: skip both
-            _getch();
-            continue;
-        }
-        if (key == 'q' || key == 'Q') break;
-        if (cli::handleKey(key, settings)) {
+        int key = _getch();
+        const bool extended = key == 0 || key == 0xE0; // function keys: a prefix, then the code
+        if (extended) key = _getch();
+        if (!extended && key == kEsc) break;
+        if (cli::handleKey(key, extended, settings)) {
             cli::apply(settings, effects);
             cli::printSettings(settings);
         }
@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "Failed to start audio stream: %s\n", backend.lastError().c_str());
         return 1;
     }
-    std::printf("Running. Press q or Ctrl+C to stop.\n");
+    std::printf("Running. Press Esc or Ctrl+C to stop.\n");
 
     runControlLoop(settings, effects);
 

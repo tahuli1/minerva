@@ -14,8 +14,10 @@ struct Settings {
 
 void apply(const Settings& settings, minerva::EffectSet& effects);
 
-// Returns true if the key changed a setting.
-bool handleKey(int key, Settings& settings);
+// `key` comes from _getch(). Function keys arrive as two codes, a 0 or 0xE0 prefix
+// followed by the key's own code; for those `extended` is true and `key` is the
+// second code. Returns true if the key changed a setting.
+bool handleKey(int key, bool extended, Settings& settings);
 
 void printHelp();
 void printSettings(const Settings& settings);
