@@ -49,19 +49,6 @@ FetchContent_Declare(googletest
     GIT_SHALLOW    TRUE)
 FetchContent_MakeAvailable(googletest)
 
-# dr_wav: a single public-domain header for reading and writing WAV files offline.
-# Only the header is used; SOURCE_SUBDIR points at nothing so dr_libs' own CMake
-# (its tests and other libraries) is never configured.
-FetchContent_Declare(dr_libs
-    GIT_REPOSITORY https://github.com/mackron/dr_libs.git
-    GIT_TAG        wav-0.14.5
-    GIT_SHALLOW    TRUE
-    SOURCE_SUBDIR  no-cmake)
-FetchContent_MakeAvailable(dr_libs)
-add_library(dr_wav INTERFACE)
-# SYSTEM: warnings from inside the header are not ours to fix, so /W4 skips them.
-target_include_directories(dr_wav SYSTEM INTERFACE ${dr_libs_SOURCE_DIR})
-
 # DaisySP: DSP building blocks (oscillators, envelopes, filters, drums) written for
 # embedded audio, so they never allocate. MIT licensed.
 # We build only the files we use instead of DaisySP's own CMake target: some of its
@@ -92,5 +79,4 @@ enable_testing()
 add_subdirectory(core)
 add_subdirectory(backends)
 add_subdirectory(apps/cli)
-add_subdirectory(tools)
 add_subdirectory(tests)
