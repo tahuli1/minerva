@@ -13,10 +13,10 @@ constexpr int kSampleRate = 1000;
 constexpr int kBlock = 64;
 
 void configure(ukefx::Delay& d, float timeMs, float feedback, float mix) {
-    d.prepare(kSampleRate, kBlock);
     d.setTimeMs(timeMs);
     d.setFeedback(feedback);
     d.setMix(mix);
+    d.prepare(kSampleRate, kBlock);
 }
 
 std::vector<float> impulse(int length) {
@@ -106,4 +106,20 @@ TEST(Delay, TimeLongerThanTheBufferIsClamped) {
     std::vector<float> out(in.size());
     d.process(in.data(), out.data(), static_cast<int>(in.size()));
     for (float s : out) EXPECT_TRUE(std::isfinite(s));
+}
+
+TEST(Delay, MixChangeGlidesInsteadOfJumping) {
+    // A long delay keeps the wet signal silent here, so the output is just
+    // (1 - mix) * dry and shows the mix ramp directly.
+    ukefx::Delay d;
+    configure(d, 1000.0f, 0.0f, 0.0f);
+    std::vector<float> in(100, 1.0f), out(100);
+    d.process(in.data(), out.data(), 10);
+    d.setMix(1.0f);
+    d.process(in.data() + 10, out.data() + 10, 90);
+
+    // 20 ms at 1 kHz is 20 samples: the dry part fades 1.0 -> 0.0 in steps of 0.05.
+    for (int i = 10; i < 30; ++i)
+        EXPECT_NEAR(out[i], 1.0f - 0.05f * static_cast<float>(i - 9), 1e-5f) << "at " << i;
+    EXPECT_EQ(out[29], 0.0f);
 }
