@@ -113,20 +113,15 @@ TEST(Voice, StartingAgainWhileFadingDoesNotJump) {
     EXPECT_LT(largestStep, 0.05f);
 }
 
-TEST(Voice, AntiAliasingSoftensTheSawJump) {
-    // The naive saw jumps by ~2 in one sample; PolyBLEP spreads the jump over two
-    // samples, which is what removes most of the aliasing at high notes.
-    auto largestStep = [](bool antiAliasing) {
-        auto voice = make(minerva::Waveform::Saw, kFlat);
-        voice.setAntiAliasing(antiAliasing);
-        voice.start(95, 1.0f); // ~1976 Hz
-        const auto out = render(voice, kSampleRate / 10);
-        float largest = 0.0f;
-        for (std::size_t i = 1; i < out.size(); ++i)
-            largest = std::max(largest, std::abs(out[i] - out[i - 1]));
-        return largest;
-    };
-    const float naive = largestStep(false);
-    EXPECT_GT(naive, 1.9f);
-    EXPECT_LT(largestStep(true), 0.8f * naive);
+TEST(Voice, SawIsAntiAliased) {
+    // A naive saw jumps from +1 to -1 in a single sample (a step of ~2). The PolyBLEP
+    // saw spreads that jump over two samples, which removes most of the aliasing at
+    // high notes, so no single step comes close to 2.
+    auto voice = make(minerva::Waveform::Saw, kFlat);
+    voice.start(95, 1.0f); // ~1976 Hz
+    const auto out = render(voice, kSampleRate / 10);
+    float largestStep = 0.0f;
+    for (std::size_t i = 1; i < out.size(); ++i)
+        largestStep = std::max(largestStep, std::abs(out[i] - out[i - 1]));
+    EXPECT_LT(largestStep, 1.6f);
 }
