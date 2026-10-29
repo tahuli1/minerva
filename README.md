@@ -66,6 +66,16 @@ blocks, with no audio device. The effect names work as above (default:
 `distortion delay`). The output is a mono 32-bit float WAV with 2 s of extra tail so
 the echoes can fade out.
 
+## Hear the synth voice
+
+```
+build\tools\Release\minerva_scale.exe <out.wav> <sine|triangle|saw|square> [octave] [--no-aa]
+```
+
+Renders a C major scale with one synth voice (oscillator + ADSR envelope), half a
+second per note. `--no-aa` turns anti-aliasing (PolyBLEP) off; compare both in a high
+octave, e.g. `6`, to hear the difference.
+
 ## Test
 
 ```
