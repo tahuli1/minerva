@@ -6,18 +6,16 @@
 
 #include "controls.h"
 #include "effects/effect_chain.h"
-#include "effects/effect_set.h"
 #include "rtaudio/rtaudio_backend.h"
 
 #include <atomic>
 #include <cstdio>
-#include <string>
-#include <string_view>
-#include <vector>
 
 namespace {
 
 std::atomic<bool> g_quit{false};
+
+constexpr int kEsc = 27;
 
 // Windows runs console control handlers on their own thread, so a plain atomic
 // store is all that's needed; the main loop sees it within one poll.
@@ -34,7 +32,7 @@ void runEffect(const float* in, float* out, int n, void* user) {
 
 // Main thread, not RT: polling the keyboard 50 times a second costs nothing and
 // keeps the loop simple. Every change goes to the effects through their atomics.
-void runControlLoop(cli::Settings& settings, minerva::EffectSet& effects) {
+void runControlLoop(cli::Settings& settings, cli::Effects& effects) {
     cli::printHelp();
     cli::printSettings(settings);
     while (!g_quit.load()) {
@@ -42,13 +40,11 @@ void runControlLoop(cli::Settings& settings, minerva::EffectSet& effects) {
             Sleep(20);
             continue;
         }
-        const int key = _getch();
-        if (key == 0 || key == 0xE0) { // arrow/function keys arrive as two codes: skip both
-            _getch();
-            continue;
-        }
-        if (key == 'q' || key == 'Q') break;
-        if (cli::handleKey(key, settings)) {
+        int key = _getch();
+        const bool extended = key == 0 || key == 0xE0; // function keys: a prefix, then the code
+        if (extended) key = _getch();
+        if (!extended && key == kEsc) break;
+        if (cli::handleKey(key, extended, settings)) {
             cli::apply(settings, effects);
             cli::printSettings(settings);
         }
@@ -56,33 +52,21 @@ void runControlLoop(cli::Settings& settings, minerva::EffectSet& effects) {
     std::printf("\n");
 }
 
-std::string join(const std::vector<std::string_view>& names) {
-    std::string joined;
-    for (std::string_view name : names) {
-        if (!joined.empty()) joined += " -> ";
-        joined += name;
-    }
-    return joined;
-}
-
 } // namespace
 
-// Usage: minerva_cli [effect ...]   effects run in the order given; known: distortion, delay
-//        minerva_cli                same as: minerva_cli distortion delay
-int main(int argc, char** argv) {
+// Until the synth is connected (Milestone 3c) the sound source is the mic, when
+// there is one, through Minerva's fixed effect chain: distortion -> delay.
+int main() {
     SetConsoleCtrlHandler(onConsoleCtrl, TRUE);
 
-    minerva::EffectSet effects;
+    cli::Effects effects;
     cli::Settings settings;
-    cli::apply(settings, effects); // Before prepare(), so the smoothers start at these values.
+    cli::apply(settings, effects);     // Before prepare(), so the smoothers start at these values.
+    effects.distortion.setLevel(0.3f); // tanh saturates near full scale; keep headphones safe.
 
-    std::vector<std::string_view> names(argv + 1, argv + argc);
-    if (names.empty()) names = {"distortion", "delay"};
     minerva::EffectChain chain;
-    if (const std::string error = minerva::buildChain(effects, names, chain); !error.empty()) {
-        std::fprintf(stderr, "%s\n", error.c_str());
-        return 1;
-    }
+    chain.add(effects.distortion);
+    chain.add(effects.delay);
 
     // Declared after the effects so it is destroyed first: the stream stops
     // before the effects it calls into go away.
@@ -94,13 +78,16 @@ int main(int argc, char** argv) {
 
     const minerva::StreamInfo& info = backend.info();
     std::printf("API:           %s\n", info.api.c_str());
-    std::printf("Input device:  %s (1 channel)\n", info.inputDevice.c_str());
+    if (info.inputDevice.empty())
+        std::printf("Input device:  none (output only: silent until the synth arrives)\n");
+    else
+        std::printf("Input device:  %s (1 channel)\n", info.inputDevice.c_str());
     std::printf("Output device: %s (%u channels)\n", info.outputDevice.c_str(), info.outputChannels);
     std::printf("Sample rate:   %u Hz\n", info.sampleRate);
     std::printf("Buffer size:   %u frames (%.2f ms)\n", info.bufferFrames,
                 1000.0 * info.bufferFrames / info.sampleRate);
     std::printf("Reported stream latency: %ld frames\n", info.latencyFrames);
-    std::printf("Effects:       %s\n", join(names).c_str());
+    std::printf("Effects:       distortion -> delay\n");
 
     // Prepare with the buffer size the device actually gave us, before audio starts.
     // This is where the delay allocates its 2-second buffer.
@@ -110,7 +97,7 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "Failed to start audio stream: %s\n", backend.lastError().c_str());
         return 1;
     }
-    std::printf("Running. Press q or Ctrl+C to stop.\n");
+    std::printf("Running. Press Esc or Ctrl+C to stop.\n");
 
     runControlLoop(settings, effects);
 
