@@ -7,6 +7,8 @@ target_include_directories(minerva_note_keys PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(minerva_note_keys PRIVATE minerva_warnings)
 
 add_executable(minerva_cli
+    console_keyboard.cpp
+    console_keyboard.h
     controls.cpp
     controls.h
     main.cpp)
