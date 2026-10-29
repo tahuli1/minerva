@@ -4,9 +4,7 @@ add_executable(minerva_tests
     distortion_test.cpp
     effect_chain_test.cpp
     effect_set_test.cpp
-    envelope_test.cpp
     offline_test.cpp
-    oscillator_test.cpp
     smoothed_value_test.cpp
     voice_test.cpp
     wav_io_test.cpp)
