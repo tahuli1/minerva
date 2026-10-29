@@ -18,7 +18,7 @@ app runs the microphone through the effects, which is how the project started (a
 - Windows 10/11
 - Visual Studio 2022 or newer with the C++ workload
 - CMake 3.24+
-- Git (CMake fetches RtAudio, GoogleTest and dr_wav on first configure)
+- Git (CMake fetches RtAudio, GoogleTest and DaisySP on first configure)
 
 ## Build
 
@@ -67,6 +67,5 @@ ctest --test-dir build -C Release
 core/       DSP and effects, portable C++ with no OS headers
 backends/   audio device I/O (currently RtAudio over WASAPI)
 apps/cli/   command-line app
-tools/      offline and measurement tools
 tests/      unit tests
 ```
