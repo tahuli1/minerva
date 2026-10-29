@@ -22,7 +22,7 @@ struct AudioConfig {
 // What the device actually gave us; may differ from what we asked for.
 struct StreamInfo {
     std::string api;
-    std::string inputDevice;
+    std::string inputDevice; // empty when there is no mic
     std::string outputDevice;
     unsigned int sampleRate = 0;
     unsigned int bufferFrames = 0;
@@ -30,9 +30,11 @@ struct StreamInfo {
     long latencyFrames = 0;
 };
 
-// Duplex stream on the default input/output devices via RtAudio (WASAPI).
-// The ukulele is a mono source: we capture one channel, process it mono,
-// and copy the result to every output channel.
+// Audio stream on the default devices via RtAudio (WASAPI). Processing is mono and
+// the result is copied to every output channel.
+// Output is required; the mic is optional. With a mic the stream is duplex and
+// `in` carries one captured channel. Without one the stream is output-only and
+// `in` is a block of silence, so the process function never has to check.
 class RtAudioBackend {
 public:
     RtAudioBackend();
@@ -56,7 +58,8 @@ private:
     std::unique_ptr<RtAudio> audio_;
     ProcessFn process_ = nullptr;
     void* user_ = nullptr;
-    std::vector<float> mono_; // Sized in open(), never resized while running.
+    std::vector<float> mono_;    // Sized in open(), never resized while running.
+    std::vector<float> silence_; // Stands in for the mic when there is none.
     unsigned int outChannels_ = 0;
     std::atomic<std::uint64_t> xruns_{0};
     StreamInfo info_;
