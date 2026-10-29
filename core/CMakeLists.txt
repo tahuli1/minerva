@@ -1,8 +1,10 @@
 # Portable DSP library: standard C++ only, no OS or audio-API headers.
-#   dsp/      building blocks shared by everything (smoothing, oscillator)
+#   dsp/      building blocks shared by everything (smoothing, oscillator, envelope)
 #   effects/  the effect framework (interface, chain, set) at its root,
 #             and one folder per concrete effect
 add_library(minerva_core STATIC
+    dsp/envelope.cpp
+    dsp/envelope.h
     dsp/oscillator.cpp
     dsp/oscillator.h
     dsp/smoothed_value.h
