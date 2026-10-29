@@ -1,4 +1,4 @@
-#include "effects/delay.h"
+#include "effects/delay/delay.h"
 
 #include <gtest/gtest.h>
 
