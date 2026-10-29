@@ -93,7 +93,8 @@ If a change might violate these rules, stop and point it out instead of doing it
 - Explain RT-relevant decisions — I want to understand them well enough to discuss in an interview.
 - Ask before adding a new dependency or changing the architecture.
 - Git: a branch and a PR per coherent chunk of a milestone; separate logical commits.
-  Push and open PRs only when I say so.
+- **No commit without my explicit approval.** Show me what changed and the planned
+  commit message(s), then wait for my OK. Push and open PRs only when I say so.
 - Talk to me in Hebrew; code, comments and docs in English.
 
 ## Milestones
