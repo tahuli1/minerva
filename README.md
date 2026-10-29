@@ -8,8 +8,8 @@ The project focuses on real-time engineering: hard deadlines, sample-accurate ti
 no allocation or locking on the audio thread, and measured latency.
 
 **Status:** early development. The engine, effect chain (distortion, delay), live
-parameter control and offline WAV processing are in place; the synthesizer, drums,
-sequencer and looper are next. Until the synth exists, the app runs the microphone
+parameter control, offline rendering to WAV and the first synth voice are in place;
+the full synthesizer, drums, sequencer and looper are next. Until the synth exists, the app runs the microphone
 through the effects, which is how the project started (as `ukefx`, an effects
 processor for a ukulele).
 
@@ -54,17 +54,6 @@ Changes glide over 20 ms, so they don't click.
 
 Use headphones, and turn the volume down before the first run: with speakers, the
 microphone will pick up the output and feed back.
-
-## Process a WAV file offline
-
-```
-build\tools\Release\minerva_process.exe <in.wav> <out.wav> [effect ...]
-```
-
-Runs a recording through the same effects as the live app, in the same 128-sample
-blocks, with no audio device. The effect names work as above (default:
-`distortion delay`). The output is a mono 32-bit float WAV with 2 s of extra tail so
-the echoes can fade out.
 
 ## Hear the synth voice
 
