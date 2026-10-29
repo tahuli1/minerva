@@ -1,13 +1,9 @@
 # Portable DSP library: standard C++ only, no OS or audio-API headers.
-#   dsp/      building blocks shared by everything (smoothing, oscillator, envelope)
+#   dsp/      small building blocks of our own (parameter smoothing)
 #   effects/  the effect framework (interface, chain, set) at its root,
 #             and one folder per concrete effect
-#   synth/    the synthesizer, built from dsp/ blocks (voice; later the voice pool)
+#   synth/    the synthesizer: voices built from DaisySP oscillators and envelopes
 add_library(minerva_core STATIC
-    dsp/envelope.cpp
-    dsp/envelope.h
-    dsp/oscillator.cpp
-    dsp/oscillator.h
     dsp/smoothed_value.h
     effects/delay/delay.cpp
     effects/delay/delay.h
@@ -21,4 +17,5 @@ add_library(minerva_core STATIC
     synth/voice.cpp
     synth/voice.h)
 target_include_directories(minerva_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(minerva_core PRIVATE minerva_warnings)
+# PUBLIC: voice.h holds DaisySP objects, so users of core need its headers too.
+target_link_libraries(minerva_core PUBLIC daisysp PRIVATE minerva_warnings)

@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <cmath>
 #include <vector>
 
 namespace {
@@ -16,24 +18,46 @@ minerva::Voice make(minerva::Waveform waveform, minerva::AdsrParams envelope) {
     return voice;
 }
 
+// Counts upward zero crossings: one per cycle of the waveform.
+int upwardCrossings(const std::vector<float>& samples) {
+    int crossings = 0;
+    for (std::size_t i = 1; i < samples.size(); ++i)
+        if (samples[i - 1] < 0.0f && samples[i] >= 0.0f) ++crossings;
+    return crossings;
+}
+
+std::vector<float> render(minerva::Voice& voice, int samples) {
+    std::vector<float> out(static_cast<std::size_t>(samples), 0.0f);
+    voice.render(out.data(), samples);
+    return out;
+}
+
+// A flat envelope (instant attack, full sustain) so the output is the waveform itself.
+constexpr minerva::AdsrParams kFlat{0.0f, 0.0f, 1.0f, 0.1f};
+
 } // namespace
 
 TEST(Voice, NoteNumbersMapToFrequencies) {
-    EXPECT_FLOAT_EQ(minerva::Voice::noteToHz(69), 440.0f);   // A4
-    EXPECT_FLOAT_EQ(minerva::Voice::noteToHz(81), 880.0f);   // an octave up doubles
-    EXPECT_FLOAT_EQ(minerva::Voice::noteToHz(57), 220.0f);   // an octave down halves
+    EXPECT_FLOAT_EQ(minerva::Voice::noteToHz(69), 440.0f);     // A4
+    EXPECT_FLOAT_EQ(minerva::Voice::noteToHz(81), 880.0f);     // an octave up doubles
+    EXPECT_FLOAT_EQ(minerva::Voice::noteToHz(57), 220.0f);     // an octave down halves
     EXPECT_NEAR(minerva::Voice::noteToHz(60), 261.63f, 0.01f); // middle C
 }
 
 TEST(Voice, PlaysThePitchOfItsNote) {
-    auto voice = make(minerva::Waveform::Sine, {0.0f, 0.0f, 1.0f, 0.1f});
+    auto voice = make(minerva::Waveform::Sine, kFlat);
     voice.start(69, 1.0f);
-    std::vector<float> out(kSampleRate, 0.0f);
-    voice.render(out.data(), kSampleRate);
-    int crossings = 0;
-    for (int i = 1; i < kSampleRate; ++i)
-        if (out[i - 1] < 0.0f && out[i] >= 0.0f) ++crossings;
-    EXPECT_NEAR(crossings, 440, 1);
+    EXPECT_NEAR(upwardCrossings(render(voice, kSampleRate)), 440, 1); // one second of A4
+}
+
+TEST(Voice, StaysInTuneAfterTenMinutes) {
+    // The oscillator's phase must wrap every cycle; an ever-growing phase would lose
+    // float precision within minutes and the pitch would drift.
+    auto voice = make(minerva::Waveform::Sine, kFlat);
+    voice.start(69, 1.0f);
+    std::vector<float> scratch(kSampleRate, 0.0f);
+    for (int second = 0; second < 10 * 60; ++second) voice.render(scratch.data(), kSampleRate);
+    EXPECT_NEAR(upwardCrossings(render(voice, kSampleRate)), 440, 1);
 }
 
 TEST(Voice, AnIdleVoiceAddsNothing) {
@@ -45,30 +69,64 @@ TEST(Voice, AnIdleVoiceAddsNothing) {
 
 TEST(Voice, RenderAddsInsteadOfOverwriting) {
     // A chord is the sum of its notes, so two voices must be able to share a buffer.
-    const minerva::AdsrParams env{0.0f, 0.0f, 1.0f, 0.1f};
-    auto a = make(minerva::Waveform::Sine, env), b = make(minerva::Waveform::Sine, env);
-    auto a2 = make(minerva::Waveform::Sine, env), b2 = make(minerva::Waveform::Sine, env);
+    auto a = make(minerva::Waveform::Sine, kFlat), b = make(minerva::Waveform::Sine, kFlat);
+    auto a2 = make(minerva::Waveform::Sine, kFlat), b2 = make(minerva::Waveform::Sine, kFlat);
     for (auto* v : {&a, &a2}) v->start(60, 0.5f);
     for (auto* v : {&b, &b2}) v->start(64, 0.5f);
 
-    std::vector<float> together(512, 0.0f), onlyA(512, 0.0f), onlyB(512, 0.0f);
+    std::vector<float> together(512, 0.0f);
     a.render(together.data(), 512);
     b.render(together.data(), 512);
-    a2.render(onlyA.data(), 512);
-    b2.render(onlyB.data(), 512);
+    const auto onlyA = render(a2, 512), onlyB = render(b2, 512);
     for (int i = 0; i < 512; ++i) EXPECT_FLOAT_EQ(together[i], onlyA[i] + onlyB[i]);
 }
 
-TEST(Voice, BecomesInactiveWhenTheReleaseEnds) {
-    auto voice = make(minerva::Waveform::Saw, {0.01f, 0.05f, 0.7f, 0.2f});
-    std::vector<float> out(kSampleRate, 0.0f);
+TEST(Voice, IsSilentWithinTheReleaseTime) {
+    // Our release time means "silent by then at the latest", even from full level.
+    // DaisySP's own time is a time constant (~4.6x shorter); voice.cpp converts.
+    auto voice = make(minerva::Waveform::Saw, {0.0f, 0.0f, 1.0f, 0.2f});
     voice.start(60, 1.0f);
-    voice.render(out.data(), kSampleRate / 2);
-    EXPECT_TRUE(voice.isActive());
+    render(voice, kSampleRate / 2);
     voice.release();
-    voice.render(out.data(), kSampleRate / 10); // 100 ms of a 200 ms release
+    render(voice, kSampleRate / 10); // 100 ms of a 200 ms release
     EXPECT_TRUE(voice.isActive());
-    voice.render(out.data(), kSampleRate / 10); // the other 100 ms
+    render(voice, kSampleRate / 10 + 1); // the other 100 ms (+1 sample)
     EXPECT_FALSE(voice.isActive());
     EXPECT_EQ(voice.note(), 60);
+}
+
+TEST(Voice, StartingAgainWhileFadingDoesNotJump) {
+    // Retriggering continues from the current level instead of dropping to 0 first,
+    // which would be an audible click.
+    auto voice = make(minerva::Waveform::Sine, {0.005f, 0.05f, 0.8f, 0.5f});
+    voice.start(57, 1.0f);
+    render(voice, kSampleRate / 4);
+    voice.release();
+    auto out = render(voice, kSampleRate / 10); // halfway down
+    voice.start(57, 1.0f);
+    const auto after = render(voice, 64);
+    out.insert(out.end(), after.begin(), after.end());
+    float largestStep = 0.0f;
+    for (std::size_t i = 1; i < out.size(); ++i)
+        largestStep = std::max(largestStep, std::abs(out[i] - out[i - 1]));
+    // A 220 Hz sine moves at most ~0.03 per sample; a drop to 0 would be far bigger.
+    EXPECT_LT(largestStep, 0.05f);
+}
+
+TEST(Voice, AntiAliasingSoftensTheSawJump) {
+    // The naive saw jumps by ~2 in one sample; PolyBLEP spreads the jump over two
+    // samples, which is what removes most of the aliasing at high notes.
+    auto largestStep = [](bool antiAliasing) {
+        auto voice = make(minerva::Waveform::Saw, kFlat);
+        voice.setAntiAliasing(antiAliasing);
+        voice.start(95, 1.0f); // ~1976 Hz
+        const auto out = render(voice, kSampleRate / 10);
+        float largest = 0.0f;
+        for (std::size_t i = 1; i < out.size(); ++i)
+            largest = std::max(largest, std::abs(out[i] - out[i - 1]));
+        return largest;
+    };
+    const float naive = largestStep(false);
+    EXPECT_GT(naive, 1.9f);
+    EXPECT_LT(largestStep(true), 0.8f * naive);
 }
