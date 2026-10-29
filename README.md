@@ -7,11 +7,11 @@ from patterns and loops, and shape the sound with effects, live, into headphones
 The project focuses on real-time engineering: hard deadlines, sample-accurate timing,
 no allocation or locking on the audio thread, and measured latency.
 
-**Status:** early development. The engine, effect chain (distortion, delay), live
-parameter control and the first synth voice (built on DaisySP) are in place; the full
-synthesizer, drums, sequencer and looper are next. Until the synth is playable, the
-app runs the microphone through the effects, which is how the project started (as
-`ukefx`, an effects processor for a ukulele).
+**Status:** early development. The engine, the master effect chain (distortion →
+delay), live parameter control and the first synth voice (built on DaisySP) are in
+place; playing the synth from the keyboard, drums, sequencer and looper are next.
+Until the synth is connected, the only sound source is the microphone, if there is
+one, which is how the project started (as `ukefx`, an effects processor for a ukulele).
 
 ## Requirements
 
@@ -30,27 +30,25 @@ cmake --build build --config Release
 ## Run
 
 ```
-build\apps\cli\Release\minerva_cli.exe [effect ...]
+build\apps\cli\Release\minerva_cli.exe
 ```
 
-Effects run in the order given. Known effects: `distortion` (warm overdrive) and
-`delay` (350 ms echo). With no arguments it runs `distortion delay`. Examples:
+The sound goes through Minerva's fixed effect chain: distortion (warm overdrive),
+then delay (350 ms echo). A microphone is optional: without one the app still runs,
+output only.
 
-```
-build\apps\cli\Release\minerva_cli.exe delay
-build\apps\cli\Release\minerva_cli.exe delay distortion
-```
-
-While it runs, change parameters from the keyboard (lowercase lowers, uppercase raises):
+While it runs, change the effects from the function keys (the letter keys are kept
+free for playing notes):
 
 | Key | Parameter |
 |---|---|
-| `d` / `D` | distortion drive |
-| `f` / `F` | delay feedback |
-| `m` / `M` | delay mix |
-| `q` | quit (Ctrl+C works too) |
+| `F1` / `F2` | distortion drive down / up |
+| `F3` / `F4` | delay feedback down / up |
+| `F5` / `F6` | delay mix down / up |
+| `Esc` | quit (Ctrl+C works too) |
 
-Changes glide over 20 ms, so they don't click.
+On some keyboards the F keys need the `Fn` key. Changes glide over 20 ms, so they
+don't click.
 
 Use headphones, and turn the volume down before the first run: with speakers, the
 microphone will pick up the output and feed back.

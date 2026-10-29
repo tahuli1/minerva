@@ -14,17 +14,23 @@ RtAudioBackend::RtAudioBackend()
 RtAudioBackend::~RtAudioBackend() { stop(); }
 
 bool RtAudioBackend::open(const AudioConfig& config, ProcessFn process, void* user) {
-    const unsigned int inId = audio_->getDefaultInputDevice();
     const unsigned int outId = audio_->getDefaultOutputDevice();
-    if (inId == 0 || outId == 0) {
-        lastError_ = inId == 0 ? "no default input (capture) device" : "no default output device";
+    if (outId == 0) {
+        lastError_ = "no default output device";
         return false;
     }
-    const RtAudio::DeviceInfo inInfo = audio_->getDeviceInfo(inId);
     const RtAudio::DeviceInfo outInfo = audio_->getDeviceInfo(outId);
-
-    RtAudio::StreamParameters inParams{inId, 1, 0};
     RtAudio::StreamParameters outParams{outId, std::min(2u, outInfo.outputChannels), 0};
+
+    // The mic is optional: without one, open an output-only stream. Asking RtAudio for
+    // the default capture device when there is none prints a driver error, so first
+    // check whether any device can capture at all.
+    bool anyInput = false;
+    for (unsigned int id : audio_->getDeviceIds())
+        if (audio_->getDeviceInfo(id).inputChannels > 0) anyInput = true;
+    const unsigned int inId = anyInput ? audio_->getDefaultInputDevice() : 0;
+    RtAudio::StreamParameters inParams{inId, 1, 0};
+    RtAudio::StreamParameters* input = inId != 0 ? &inParams : nullptr;
 
     process_ = process;
     user_ = user;
@@ -32,17 +38,18 @@ bool RtAudioBackend::open(const AudioConfig& config, ProcessFn process, void* us
 
     // RtAudio may change bufferFrames to what the device supports; it writes the real value back.
     unsigned int bufferFrames = config.bufferFrames;
-    if (audio_->openStream(&outParams, &inParams, RTAUDIO_FLOAT32, config.sampleRate,
+    if (audio_->openStream(&outParams, input, RTAUDIO_FLOAT32, config.sampleRate,
                            &bufferFrames, &RtAudioBackend::audioCallback, this) != RTAUDIO_NO_ERROR) {
         lastError_ = audio_->getErrorText();
         return false;
     }
 
-    // Allocate the scratch buffer here, before the stream starts: the callback must never allocate.
+    // Allocate the scratch buffers here, before the stream starts: the callback must never allocate.
     mono_.assign(bufferFrames, 0.0f);
+    silence_.assign(bufferFrames, 0.0f);
 
     info_.api = RtAudio::getApiDisplayName(audio_->getCurrentApi());
-    info_.inputDevice = inInfo.name;
+    info_.inputDevice = input != nullptr ? audio_->getDeviceInfo(inId).name : "";
     info_.outputDevice = outInfo.name;
     info_.sampleRate = audio_->getStreamSampleRate();
     info_.bufferFrames = bufferFrames;
@@ -80,15 +87,17 @@ int RtAudioBackend::audioCallback(void* out, void* in, unsigned int nFrames, dou
     // it's a standalone counter, nothing else is published through it.
     if (status != 0) backend->xruns_.fetch_add(1, std::memory_order_relaxed);
 
-    // Never expected, but if the block is bigger than our buffer, output silence
-    // rather than grow the buffer (allocation) or write out of bounds.
-    if (in == nullptr || nFrames > backend->mono_.size()) {
+    // Never expected, but if the block is bigger than our buffers, output silence
+    // rather than grow them (allocation) or write out of bounds.
+    if (nFrames > backend->mono_.size()) {
         std::fill_n(dst, nFrames * channels, 0.0f);
         return 0;
     }
 
+    // Without a mic (output-only stream) RtAudio passes no input: use silence instead.
+    const float* src = in != nullptr ? static_cast<const float*>(in) : backend->silence_.data();
     float* mono = backend->mono_.data();
-    backend->process_(static_cast<const float*>(in), mono, static_cast<int>(nFrames), backend->user_);
+    backend->process_(src, mono, static_cast<int>(nFrames), backend->user_);
 
     // Output is interleaved: L R L R ...
     for (unsigned int i = 0; i < nFrames; ++i)
