@@ -1,5 +1,7 @@
 #include "engine/engine.h"
 
+#include "allocation_counter.h"
+
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -108,4 +110,37 @@ TEST(Engine, AWaveformChangeThroughTheQueueChangesTheSound) {
     float difference = 0.0f;
     for (int i = 0; i < kBlock; ++i) difference = std::max(difference, std::abs(a[i] - b[i]));
     EXPECT_GT(difference, 0.01f);
+}
+
+TEST(Engine, ProcessNeverAllocatesOrFrees) {
+    // The rule the whole audio path depends on, checked rather than promised.
+    // Twenty seconds of busy playing: chords past the 16 voices (so voices are
+    // stolen), releases, waveform changes, the distortion switched on and off and
+    // the delay's parameters moving. The counter is armed only around process(),
+    // the audio thread's part; pushing commands is the control thread's.
+    minerva::Engine engine;
+    engine.distortion().setEnabled(true);
+    engine.prepare(kSampleRate, kBlock); // allocating here is allowed
+
+    std::vector<float> out(kBlock); // the backend's buffer, allocated before audio
+    int allocations = 0;
+    int frees = 0;
+    for (int b = 0; b < kSampleRate / kBlock * 20; ++b) {
+        if (b % 10 == 0) engine.noteOn(36 + (b / 10) % 48, 0.8f);
+        if (b % 10 == 5 && b > 200) engine.noteOff(36 + (b / 10 - 20) % 48);
+        if (b % 500 == 0) engine.setWaveform(static_cast<minerva::Waveform>((b / 500) % 4));
+        if (b % 700 == 0) engine.distortion().setEnabled((b / 700) % 2 == 0);
+        if (b % 300 == 0) {
+            engine.delay().setFeedback(0.2f + 0.1f * static_cast<float>((b / 300) % 7));
+            engine.delay().setMix(0.1f * static_cast<float>((b / 300) % 10));
+            engine.delay().setTimeMs(100.0f + 50.0f * static_cast<float>((b / 300) % 10));
+        }
+        test::CountAllocations count;
+        engine.process(nullptr, out.data(), kBlock);
+        allocations += count.allocations();
+        frees += count.frees();
+    }
+    EXPECT_GT(engine.synth().activeVoices(), 0); // it really played
+    EXPECT_EQ(allocations, 0);
+    EXPECT_EQ(frees, 0);
 }
