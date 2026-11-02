@@ -1,6 +1,11 @@
 #pragma once
 
+#include "rt/callback_timing.h"
+
+#include <rigtorp/SPSCQueue.h>
+
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -51,6 +56,16 @@ public:
     const std::string& lastError() const { return lastError_; }
     std::uint64_t xrunCount() const { return xruns_.load(std::memory_order_relaxed); }
 
+    // Main thread. Every callback is timed, and the timing travels to the main
+    // thread through an SPSC queue: the audio thread writes, the main thread reads.
+    // Returns false when no timing is waiting.
+    bool popTiming(CallbackTiming& timing);
+    // Timings the audio thread had to throw away because the queue was full: it
+    // never waits for the main thread, so a slow reader loses data, not deadlines.
+    std::uint64_t droppedTimings() const { return droppedTimings_.load(std::memory_order_relaxed); }
+    // The rate of the clock the timings are in (QueryPerformanceFrequency).
+    double ticksPerSecond() const { return ticksPerSecond_; }
+
 private:
     static int audioCallback(void* out, void* in, unsigned int nFrames, double streamTime,
                              unsigned int status, void* self);
@@ -62,6 +77,13 @@ private:
     std::vector<float> silence_; // Stands in for the mic when there is none.
     unsigned int outChannels_ = 0;
     std::atomic<std::uint64_t> xruns_{0};
+
+    // About 11 s of 128-frame blocks at 48 kHz, so the main thread can stall for a
+    // long time before anything is lost. Allocated here, before audio starts.
+    static constexpr std::size_t kTimingCapacity = 4096;
+    rigtorp::SPSCQueue<CallbackTiming> timings_{kTimingCapacity};
+    std::atomic<std::uint64_t> droppedTimings_{0};
+    double ticksPerSecond_ = 0.0;
     StreamInfo info_;
     std::string lastError_;
 
