@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
+#include <new>
 #include <vector>
 
 namespace {
@@ -124,4 +126,39 @@ TEST(Voice, SawIsAntiAliased) {
     for (std::size_t i = 1; i < out.size(); ++i)
         largestStep = std::max(largestStep, std::abs(out[i] - out[i - 1]));
     EXPECT_LT(largestStep, 1.6f);
+}
+
+namespace {
+
+// Builds a voice in memory pre-filled with `fill`, plays a note and returns the sound.
+std::vector<float> playInMemoryFilledWith(unsigned char fill, minerva::Waveform waveform) {
+    alignas(minerva::Voice) unsigned char memory[sizeof(minerva::Voice)];
+    std::fill(std::begin(memory), std::end(memory), fill);
+    auto* voice = new (memory) minerva::Voice;
+    voice->prepare(kSampleRate);
+    voice->setWaveform(waveform);
+    voice->setEnvelope(kFlat);
+    voice->start(60, 1.0f);
+    std::vector<float> out = render(*voice, 4800);
+    voice->~Voice();
+    return out;
+}
+
+} // namespace
+
+TEST(Voice, SoundsTheSameWhateverItsMemoryHeldBefore) {
+    // A voice must not depend on what was in memory before it was built: the
+    // engine can live on the stack, where leftovers are anything. All-ones bytes
+    // read as a float are NaN. DaisySP's Oscillator once left `last_out_`
+    // uninitialized, and the triangle's integrator then started from that NaN and
+    // output NaN forever (we patch DaisySP for it).
+    for (int w = 0; w < 4; ++w) {
+        const auto waveform = static_cast<minerva::Waveform>(w);
+        const std::vector<float> fromZeros = playInMemoryFilledWith(0x00, waveform);
+        const std::vector<float> fromGarbage = playInMemoryFilledWith(0xFF, waveform);
+        EXPECT_TRUE(std::all_of(fromGarbage.begin(), fromGarbage.end(),
+                                [](float s) { return std::isfinite(s); }))
+            << "waveform " << w;
+        EXPECT_EQ(fromGarbage, fromZeros) << "waveform " << w;
+    }
 }
