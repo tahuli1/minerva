@@ -61,8 +61,8 @@ void TimingTable::printTitle() {
 
 void TimingTable::printHeader() {
     clearLine();
-    std::printf("  time |  avg us | p99.9 us |  max us | load %% | gap max ms | dropped\n");
-    std::printf("-------+---------+----------+---------+--------+------------+--------\n");
+    std::printf("  time |  avg us | p99.9 us |  max us | load %% | gap max ms | late | dropped\n");
+    std::printf("-------+---------+----------+---------+--------+------------+------+--------\n");
 }
 
 void TimingTable::printRow(const minerva::TimingSummary& s, std::uint64_t droppedTimings) {
@@ -72,9 +72,9 @@ void TimingTable::printRow(const minerva::TimingSummary& s, std::uint64_t droppe
     // block period the worst case used.
     const double load = s.deadlineMs > 0.0 ? 100.0 * s.maxMs / s.deadlineMs : 0.0;
     clearLine();
-    std::printf("%5ds | %7.1f | %8.1f | %7.1f | %6.1f | %10.2f | %7llu\n", rows_,
+    std::printf("%5ds | %7.1f | %8.1f | %7.1f | %6.1f | %10.2f | %4d | %7llu\n", rows_,
                 1000.0 * s.avgMs, 1000.0 * s.p999Ms, 1000.0 * s.maxMs, load, s.maxGapMs,
-                static_cast<unsigned long long>(droppedTimings));
+                s.lateCallbacks, static_cast<unsigned long long>(droppedTimings));
 }
 
 void printSettings(const Settings& settings) {

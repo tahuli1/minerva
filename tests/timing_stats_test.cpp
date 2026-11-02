@@ -70,3 +70,38 @@ TEST(TimingStats, ResetStartsAFreshPeriodButKeepsTheGapAcrossIt) {
     EXPECT_DOUBLE_EQ(s.maxMs, 0.1);
     EXPECT_DOUBLE_EQ(s.maxGapMs, 8.0);
 }
+
+TEST(TimingStats, AGapOverOneAndAHalfBlocksIsLate) {
+    // One block is 2666.7 us, so the threshold is 4000 us.
+    minerva::TimingStats stats(kTicksPerSecond, kSampleRate);
+    stats.add(timing(0, 100));
+    stats.add(timing(3900, 100));  // gap 3900: jitter, not late
+    stats.add(timing(8001, 100));  // gap 4101: late
+    stats.add(timing(10668, 100)); // gap 2667: on time
+    EXPECT_EQ(stats.summary().lateCallbacks, 1);
+}
+
+TEST(TimingStats, OneLongGapCountsOnce) {
+    // However long the stall, it is one late callback, not one per missed block.
+    minerva::TimingStats stats(kTicksPerSecond, kSampleRate);
+    stats.add(timing(0, 100));
+    stats.add(timing(50000, 100));
+    EXPECT_EQ(stats.summary().lateCallbacks, 1);
+}
+
+TEST(TimingStats, LatenessFollowsTheBlockSize) {
+    // With 256-frame blocks (5333 us) a 4500 us gap is on time.
+    minerva::TimingStats stats(kTicksPerSecond, kSampleRate);
+    stats.add({0, 100, 256});
+    stats.add({4500, 100, 256});
+    EXPECT_EQ(stats.summary().lateCallbacks, 0);
+}
+
+TEST(TimingStats, ResetClearsLateCallbacks) {
+    minerva::TimingStats stats(kTicksPerSecond, kSampleRate);
+    stats.add(timing(0, 100));
+    stats.add(timing(10000, 100));
+    stats.reset();
+    stats.add(timing(12667, 100));
+    EXPECT_EQ(stats.summary().lateCallbacks, 0);
+}
