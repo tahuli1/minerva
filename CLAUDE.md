@@ -15,17 +15,17 @@ latency/jitter improvements.
 were built under that name; the engine, effects and tooling carry over.)
 
 ## Goals (definition of done)
-- Round-trip latency under 10 ms.
 - Zero xruns (buffer underruns/overruns) over an hour of playing, even with the system under load.
 - Sample-accurate sequencing: every step lands on its exact sample, whatever the block size.
-- Measurements: per-callback processing time vs. deadline (histogram + live graph), xrun count,
-  measured latency, CPU cost vs. number of active voices.
+- Measurements: per-callback processing time vs. deadline (histogram + live graph), xrun count.
+- `core/` builds for an ARM Cortex-M target in CI (embedded-ready).
 - A README with before/after numbers for every RT improvement, and a demo video.
+- Bonus: round-trip latency under 10 ms, measured with a loopback tool.
 
 ## Platform & tech
 - **OS:** Windows (primary). Keep `core/` portable — a Linux backend (JACK/ALSA) and an STM32 port may come later.
 - **Language:** C++20, MSVC, CMake.
-- **Audio I/O:** RtAudio (over WASAPI), duplex: the mic is used only to record into the looper. Later: our own WASAPI exclusive-mode backend, then ASIO.
+- **Audio I/O:** RtAudio (over WASAPI), output-only. The mic would only matter for the looper (a bonus milestone), so it is not opened. Bonus: our own WASAPI exclusive-mode backend, then ASIO.
 - **Input:** the computer keyboard (75%, no numpad), read by virtual key code with key-up events. No MIDI hardware for now.
 - **GUI (later stage):** Dear ImGui + ImPlot.
 - **DSP:** DaisySP (oscillators, envelopes, filters, drums, effects): MIT, written for embedded, never allocates.
@@ -101,17 +101,22 @@ If a change might violate these rules, stop and point it out instead of doing it
 - Talk to me in Hebrew; code, comments and docs in English.
 
 ## Milestones
+The core path, in this order: 4 → 6 → 7 → 10 → 11. Bonus milestones and bonus items
+are optional: only if there is time, never a requirement for "done".
+
 1. **Skeleton:** ✅ CMake project, RtAudio via FetchContent, CLI pass-through.
 2. **Effects:** ✅ distortion, delay, effect chain, parameter smoothing, offline WAV tool, CI.
 3. **Synth:** ✅ rename to Minerva, oscillators, ADSR, 16-voice pool, keyboard input (key down/up) through an SPSC command queue; runs without a mic (output-only stream when none is present).
-4. **Measurement:** callback timing vs. deadline, own xrun detection, lock-free metrics buffer, CSV export + plotting script, loopback latency tool, a test that fails if the callback allocates, and an ARM (Cortex-M) build of `core/` in CI.
+4. **Measurement:** callback timing vs. deadline through a lock-free queue, shown with `--stats` (4a ✅); own xrun detection from callback gaps; a test that fails if the callback allocates; an ARM (Cortex-M) build of `core/` in CI. *Bonus:* loopback latency tool, CPU cost vs. number of voices.
+6. **Sequencer + drums (lean):** sample-based clock, a 16-step drum pattern with synthesized drums, every step on its exact sample whatever the block size, play/stop and tempo. *Bonus:* melody steps, recording into patterns, swing, song mode, save/load songs (JSON, nlohmann/json), offline render to WAV (dr_wav).
+7. **RT hardening:** MMCSS, `VirtualLock`, buffer-size tuning, stress testing, LatencyMon/ETW analysis. Record before/after numbers, with a CSV export of every callback and a plotting script (histogram, time series vs. deadline) to show them.
+10. **GUI:** ImGui on-screen keyboard, step grid, parameters, live ImPlot of callback time vs. deadline.
+11. **Polish:** README with graphs, demo video, public repository.
+
+Bonus milestones:
 5. **Sounds:** filter + filter envelope, presets (keys, pad, bass, lead, pluck), reverb.
-6. **Sequencer + drums:** sample-based clock, 16-step patterns, synthesized drums, recording into patterns, save/load songs (JSON, nlohmann/json), offline render to WAV (dr_wav).
-7. **RT hardening:** MMCSS, `VirtualLock`, buffer-size tuning, stress testing, LatencyMon/ETW analysis. Record before/after numbers.
 8. **Looper:** locked audio buffer, record/play/overdub in sync with the pattern; hold a key to record from the mic, with latency compensation.
 9. **Own backend:** WASAPI exclusive mode (then ASIO if hardware arrives).
-10. **GUI:** ImGui on-screen keyboard, step grid, parameters, save/open buttons, live ImPlot of callback time vs. deadline.
-11. **Polish:** README with graphs, demo video, public repository.
 
 ## Build
 ```

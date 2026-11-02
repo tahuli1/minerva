@@ -27,7 +27,6 @@ struct AudioConfig {
 // What the device actually gave us; may differ from what we asked for.
 struct StreamInfo {
     std::string api;
-    std::string inputDevice; // empty when there is no mic
     std::string outputDevice;
     unsigned int sampleRate = 0;
     unsigned int bufferFrames = 0;
@@ -35,11 +34,11 @@ struct StreamInfo {
     long latencyFrames = 0;
 };
 
-// Audio stream on the default devices via RtAudio (WASAPI). Processing is mono and
-// the result is copied to every output channel.
-// Output is required; the mic is optional. With a mic the stream is duplex and
-// `in` carries one captured channel. Without one the stream is output-only and
-// `in` is a block of silence, so the process function never has to check.
+// Output-only audio stream on the default device via RtAudio (WASAPI). Processing is
+// mono and the result is copied to every output channel. The mic is not opened:
+// nothing uses it yet (it would come back with the looper, a bonus milestone), and
+// an open mic shows the Windows "microphone in use" icon. `in` is a block of
+// silence, so the process function never has to check.
 class RtAudioBackend {
 public:
     RtAudioBackend();
@@ -54,7 +53,6 @@ public:
 
     const StreamInfo& info() const { return info_; }
     const std::string& lastError() const { return lastError_; }
-    std::uint64_t xrunCount() const { return xruns_.load(std::memory_order_relaxed); }
 
     // Main thread. Every callback is timed, and the timing travels to the main
     // thread through an SPSC queue: the audio thread writes, the main thread reads.
@@ -74,9 +72,8 @@ private:
     ProcessFn process_ = nullptr;
     void* user_ = nullptr;
     std::vector<float> mono_;    // Sized in open(), never resized while running.
-    std::vector<float> silence_; // Stands in for the mic when there is none.
+    std::vector<float> silence_; // Passed as `in`, since there is no mic.
     unsigned int outChannels_ = 0;
-    std::atomic<std::uint64_t> xruns_{0};
 
     // About 11 s of 128-frame blocks at 48 kHz, so the main thread can stall for a
     // long time before anything is lost. Allocated here, before audio starts.

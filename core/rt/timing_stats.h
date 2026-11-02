@@ -20,13 +20,21 @@ struct TimingSummary {
     // audio thread back.
     double maxGapMs = 0.0;
     double deadlineMs = 0.0; // one block period: frames / sample rate
-    int driverXruns = 0;
+    // Callbacks that started more than kLateFactor block periods after the one
+    // before. A suspicion, not proof of a click: the OS keeps some audio queued
+    // and may have covered the delay. WASAPI reports no output underruns to the
+    // app, so this is the only sign of one we get.
+    int lateCallbacks = 0;
 };
 
 // Collects callback timings on the main thread and summarizes them. Not RT: it
 // stores every duration in a vector to compute the percentile.
 class TimingStats {
 public:
+    // A gap of one and a half block periods: well past normal OS jitter (about
+    // 0.1 ms on top of 2.67 ms here), yet short of a whole missed block.
+    static constexpr double kLateFactor = 1.5;
+
     TimingStats(double ticksPerSecond, int sampleRate);
 
     void add(const CallbackTiming& timing);
@@ -45,7 +53,7 @@ private:
     std::int64_t maxGap_ = 0;
     std::int64_t lastStart_ = -1; // -1: no callback seen yet, so no gap to measure
     std::uint32_t frames_ = 0;
-    int driverXruns_ = 0;
+    int lateCallbacks_ = 0;
 };
 
 } // namespace minerva

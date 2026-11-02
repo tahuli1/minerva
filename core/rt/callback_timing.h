@@ -14,7 +14,6 @@ struct CallbackTiming {
     std::int64_t startTicks = 0;    // when the callback began
     std::int64_t durationTicks = 0; // how long it worked
     std::uint32_t frames = 0;       // block size, which sets the deadline
-    bool driverXrun = false;        // the driver flagged this block as late
 };
 
 } // namespace minerva

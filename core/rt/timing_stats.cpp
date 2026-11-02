@@ -9,12 +9,18 @@ TimingStats::TimingStats(double ticksPerSecond, int sampleRate)
     : ticksPerSecond_(ticksPerSecond), sampleRate_(sampleRate) {}
 
 void TimingStats::add(const CallbackTiming& timing) {
-    if (lastStart_ >= 0) maxGap_ = std::max(maxGap_, timing.startTicks - lastStart_);
+    if (lastStart_ >= 0) {
+        const std::int64_t gap = timing.startTicks - lastStart_;
+        maxGap_ = std::max(maxGap_, gap);
+        // The block period in clock ticks follows the block size, so the threshold
+        // stays right if the buffer size changes.
+        const double periodTicks = ticksPerSecond_ * timing.frames / sampleRate_;
+        if (static_cast<double>(gap) > kLateFactor * periodTicks) ++lateCallbacks_;
+    }
     lastStart_ = timing.startTicks;
     durations_.push_back(timing.durationTicks);
     totalDuration_ += timing.durationTicks;
     frames_ = timing.frames;
-    if (timing.driverXrun) ++driverXruns_;
 }
 
 TimingSummary TimingStats::summary() const {
@@ -22,7 +28,7 @@ TimingSummary TimingStats::summary() const {
     s.callbacks = static_cast<int>(durations_.size());
     s.maxGapMs = ticksToMs(maxGap_);
     s.deadlineMs = sampleRate_ > 0 ? 1000.0 * frames_ / sampleRate_ : 0.0;
-    s.driverXruns = driverXruns_;
+    s.lateCallbacks = lateCallbacks_;
     if (durations_.empty()) return s;
 
     s.avgMs = ticksToMs(totalDuration_) / s.callbacks;
@@ -39,7 +45,7 @@ void TimingStats::reset() {
     durations_.clear();
     totalDuration_ = 0;
     maxGap_ = 0;
-    driverXruns_ = 0;
+    lateCallbacks_ = 0;
 }
 
 double TimingStats::ticksToMs(std::int64_t ticks) const {
