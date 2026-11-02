@@ -2,14 +2,34 @@
 
 #include "denormals.h"
 
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+
 #include <RtAudio.h>
 
 #include <algorithm>
 
 namespace minerva {
 
+namespace {
+
+// QueryPerformanceCounter: Windows' high-resolution clock (well under a
+// microsecond), read without blocking, so the audio thread may call it.
+std::int64_t nowTicks() {
+    LARGE_INTEGER t;
+    QueryPerformanceCounter(&t);
+    return t.QuadPart;
+}
+
+} // namespace
+
 RtAudioBackend::RtAudioBackend()
-    : audio_(std::make_unique<RtAudio>(RtAudio::WINDOWS_WASAPI)) {}
+    : audio_(std::make_unique<RtAudio>(RtAudio::WINDOWS_WASAPI)) {
+    LARGE_INTEGER frequency;
+    QueryPerformanceFrequency(&frequency);
+    ticksPerSecond_ = static_cast<double>(frequency.QuadPart);
+}
 
 RtAudioBackend::~RtAudioBackend() { stop(); }
 
@@ -66,6 +86,14 @@ bool RtAudioBackend::start() {
     return true;
 }
 
+bool RtAudioBackend::popTiming(CallbackTiming& timing) {
+    const CallbackTiming* next = timings_.front();
+    if (next == nullptr) return false;
+    timing = *next;
+    timings_.pop();
+    return true;
+}
+
 void RtAudioBackend::stop() {
     if (audio_->isStreamRunning()) audio_->stopStream();
     if (audio_->isStreamOpen()) audio_->closeStream();
@@ -75,6 +103,7 @@ void RtAudioBackend::stop() {
 
 int RtAudioBackend::audioCallback(void* out, void* in, unsigned int nFrames, double /*streamTime*/,
                                   unsigned int status, void* self) {
+    const std::int64_t start = nowTicks();
     // Set per callback rather than once: RtAudio owns this thread, and this way we
     // don't depend on nothing else having changed MXCSR in between. Costs a few cycles.
     ScopedNoDenormals noDenormals;
@@ -103,6 +132,10 @@ int RtAudioBackend::audioCallback(void* out, void* in, unsigned int nFrames, dou
     for (unsigned int i = 0; i < nFrames; ++i)
         for (unsigned int c = 0; c < channels; ++c)
             dst[i * channels + c] = mono[i];
+
+    const CallbackTiming timing{start, nowTicks() - start, nFrames, status != 0};
+    if (!backend->timings_.try_push(timing))
+        backend->droppedTimings_.fetch_add(1, std::memory_order_relaxed);
     return 0;
 }
 

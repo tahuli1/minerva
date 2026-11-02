@@ -7,6 +7,7 @@ add_executable(minerva_tests
     note_keys_test.cpp
     smoothed_value_test.cpp
     synth_test.cpp
+    timing_stats_test.cpp
     voice_test.cpp)
 # denormals.h lives with the backends (it is x86-specific), so its folder is added here.
 target_include_directories(minerva_tests PRIVATE ${PROJECT_SOURCE_DIR}/backends)

@@ -14,7 +14,7 @@ public:
     static constexpr int kMaxEffects = 8;
 
     // Not RT, and not while audio runs: call before prepare(). Changing the chain
-    // live needs a lock-free swap, which comes with the GUI (Milestone 6).
+    // live needs a lock-free swap, which comes with the GUI (Milestone 10).
     // Returns false if the chain is full.
     bool add(Effect& effect);
 

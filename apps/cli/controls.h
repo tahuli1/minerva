@@ -29,7 +29,6 @@ void apply(const Settings& settings, minerva::Engine& engine);
 // Note keys are not settings; NoteKeys handles them.
 bool handleKey(int key, Settings& settings);
 
-void printHelp();
-void printSettings(const Settings& settings);
+const char* waveformName(minerva::Waveform waveform);
 
 } // namespace cli
