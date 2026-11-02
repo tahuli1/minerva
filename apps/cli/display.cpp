@@ -31,12 +31,7 @@ void printAudio(const minerva::StreamInfo& info) {
     printField("API", info.api.c_str());
     std::snprintf(text, sizeof text, "%s, %u channels", info.outputDevice.c_str(), info.outputChannels);
     printField("Output", text);
-    if (info.inputDevice.empty()) {
-        printField("Input", "none (output only)");
-    } else {
-        std::snprintf(text, sizeof text, "%s (unused until the looper)", info.inputDevice.c_str());
-        printField("Input", text);
-    }
+    printField("Input", "none: Minerva only plays");
     std::snprintf(text, sizeof text, "%u Hz", info.sampleRate);
     printField("Sample rate", text);
     std::snprintf(text, sizeof text, "%u frames = %.2f ms (the deadline)", info.bufferFrames,
@@ -66,8 +61,8 @@ void TimingTable::printTitle() {
 
 void TimingTable::printHeader() {
     clearLine();
-    std::printf("  time |  avg us | p99.9 us |  max us | load %% | gap max ms | xruns | dropped\n");
-    std::printf("-------+---------+----------+---------+--------+------------+-------+--------\n");
+    std::printf("  time |  avg us | p99.9 us |  max us | load %% | gap max ms | dropped\n");
+    std::printf("-------+---------+----------+---------+--------+------------+--------\n");
 }
 
 void TimingTable::printRow(const minerva::TimingSummary& s, std::uint64_t droppedTimings) {
@@ -77,9 +72,9 @@ void TimingTable::printRow(const minerva::TimingSummary& s, std::uint64_t droppe
     // block period the worst case used.
     const double load = s.deadlineMs > 0.0 ? 100.0 * s.maxMs / s.deadlineMs : 0.0;
     clearLine();
-    std::printf("%5ds | %7.1f | %8.1f | %7.1f | %6.1f | %10.2f | %5d | %7llu\n", rows_,
+    std::printf("%5ds | %7.1f | %8.1f | %7.1f | %6.1f | %10.2f | %7llu\n", rows_,
                 1000.0 * s.avgMs, 1000.0 * s.p999Ms, 1000.0 * s.maxMs, load, s.maxGapMs,
-                s.driverXruns, static_cast<unsigned long long>(droppedTimings));
+                static_cast<unsigned long long>(droppedTimings));
 }
 
 void printSettings(const Settings& settings) {

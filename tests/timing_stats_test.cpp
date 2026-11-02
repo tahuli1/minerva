@@ -9,8 +9,8 @@ constexpr double kTicksPerSecond = 1'000'000.0;
 constexpr int kSampleRate = 48000;
 constexpr std::uint32_t kFrames = 128; // 2.6667 ms
 
-minerva::CallbackTiming timing(std::int64_t startUs, std::int64_t durationUs, bool xrun = false) {
-    return {startUs, durationUs, kFrames, xrun};
+minerva::CallbackTiming timing(std::int64_t startUs, std::int64_t durationUs) {
+    return {startUs, durationUs, kFrames};
 }
 
 } // namespace
@@ -60,22 +60,13 @@ TEST(TimingStats, LongestGapBetweenCallbackStarts) {
     EXPECT_DOUBLE_EQ(stats.summary().maxGapMs, 10.0);
 }
 
-TEST(TimingStats, CountsDriverXruns) {
-    minerva::TimingStats stats(kTicksPerSecond, kSampleRate);
-    stats.add(timing(0, 100, true));
-    stats.add(timing(2667, 100));
-    stats.add(timing(5333, 100, true));
-    EXPECT_EQ(stats.summary().driverXruns, 2);
-}
-
 TEST(TimingStats, ResetStartsAFreshPeriodButKeepsTheGapAcrossIt) {
     minerva::TimingStats stats(kTicksPerSecond, kSampleRate);
-    stats.add(timing(0, 500, true));
+    stats.add(timing(0, 500));
     stats.reset();
     stats.add(timing(8000, 100)); // 8 ms after the callback before the reset
     const minerva::TimingSummary s = stats.summary();
     EXPECT_EQ(s.callbacks, 1);
     EXPECT_DOUBLE_EQ(s.maxMs, 0.1);
-    EXPECT_EQ(s.driverXruns, 0);
     EXPECT_DOUBLE_EQ(s.maxGapMs, 8.0);
 }

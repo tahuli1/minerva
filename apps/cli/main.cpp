@@ -139,6 +139,6 @@ int main(int argc, char** argv) {
     runControlLoop(engine, settings, backend, showStats);
 
     backend.stop();
-    std::printf("\n\nStopped. Driver xruns: %llu\n", static_cast<unsigned long long>(backend.xrunCount()));
+    std::printf("\n\nStopped.\n");
     return 0;
 }

@@ -20,7 +20,6 @@ struct TimingSummary {
     // audio thread back.
     double maxGapMs = 0.0;
     double deadlineMs = 0.0; // one block period: frames / sample rate
-    int driverXruns = 0;
 };
 
 // Collects callback timings on the main thread and summarizes them. Not RT: it
@@ -45,7 +44,6 @@ private:
     std::int64_t maxGap_ = 0;
     std::int64_t lastStart_ = -1; // -1: no callback seen yet, so no gap to measure
     std::uint32_t frames_ = 0;
-    int driverXruns_ = 0;
 };
 
 } // namespace minerva

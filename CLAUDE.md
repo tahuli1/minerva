@@ -25,7 +25,7 @@ were built under that name; the engine, effects and tooling carry over.)
 ## Platform & tech
 - **OS:** Windows (primary). Keep `core/` portable — a Linux backend (JACK/ALSA) and an STM32 port may come later.
 - **Language:** C++20, MSVC, CMake.
-- **Audio I/O:** RtAudio (over WASAPI), duplex: the mic is used only to record into the looper. Later: our own WASAPI exclusive-mode backend, then ASIO.
+- **Audio I/O:** RtAudio (over WASAPI), output-only. The mic would only matter for the looper (a bonus milestone), so it is not opened. Bonus: our own WASAPI exclusive-mode backend, then ASIO.
 - **Input:** the computer keyboard (75%, no numpad), read by virtual key code with key-up events. No MIDI hardware for now.
 - **GUI (later stage):** Dear ImGui + ImPlot.
 - **DSP:** DaisySP (oscillators, envelopes, filters, drums, effects): MIT, written for embedded, never allocates.

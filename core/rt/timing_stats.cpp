@@ -14,7 +14,6 @@ void TimingStats::add(const CallbackTiming& timing) {
     durations_.push_back(timing.durationTicks);
     totalDuration_ += timing.durationTicks;
     frames_ = timing.frames;
-    if (timing.driverXrun) ++driverXruns_;
 }
 
 TimingSummary TimingStats::summary() const {
@@ -22,7 +21,6 @@ TimingSummary TimingStats::summary() const {
     s.callbacks = static_cast<int>(durations_.size());
     s.maxGapMs = ticksToMs(maxGap_);
     s.deadlineMs = sampleRate_ > 0 ? 1000.0 * frames_ / sampleRate_ : 0.0;
-    s.driverXruns = driverXruns_;
     if (durations_.empty()) return s;
 
     s.avgMs = ticksToMs(totalDuration_) / s.callbacks;
@@ -39,7 +37,6 @@ void TimingStats::reset() {
     durations_.clear();
     totalDuration_ = 0;
     maxGap_ = 0;
-    driverXruns_ = 0;
 }
 
 double TimingStats::ticksToMs(std::int64_t ticks) const {

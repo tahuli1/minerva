@@ -42,23 +42,13 @@ bool RtAudioBackend::open(const AudioConfig& config, ProcessFn process, void* us
     const RtAudio::DeviceInfo outInfo = audio_->getDeviceInfo(outId);
     RtAudio::StreamParameters outParams{outId, std::min(2u, outInfo.outputChannels), 0};
 
-    // The mic is optional: without one, open an output-only stream. Asking RtAudio for
-    // the default capture device when there is none prints a driver error, so first
-    // check whether any device can capture at all.
-    bool anyInput = false;
-    for (unsigned int id : audio_->getDeviceIds())
-        if (audio_->getDeviceInfo(id).inputChannels > 0) anyInput = true;
-    const unsigned int inId = anyInput ? audio_->getDefaultInputDevice() : 0;
-    RtAudio::StreamParameters inParams{inId, 1, 0};
-    RtAudio::StreamParameters* input = inId != 0 ? &inParams : nullptr;
-
     process_ = process;
     user_ = user;
     outChannels_ = outParams.nChannels;
 
     // RtAudio may change bufferFrames to what the device supports; it writes the real value back.
     unsigned int bufferFrames = config.bufferFrames;
-    if (audio_->openStream(&outParams, input, RTAUDIO_FLOAT32, config.sampleRate,
+    if (audio_->openStream(&outParams, nullptr, RTAUDIO_FLOAT32, config.sampleRate,
                            &bufferFrames, &RtAudioBackend::audioCallback, this) != RTAUDIO_NO_ERROR) {
         lastError_ = audio_->getErrorText();
         return false;
@@ -69,7 +59,6 @@ bool RtAudioBackend::open(const AudioConfig& config, ProcessFn process, void* us
     silence_.assign(bufferFrames, 0.0f);
 
     info_.api = RtAudio::getApiDisplayName(audio_->getCurrentApi());
-    info_.inputDevice = input != nullptr ? audio_->getDeviceInfo(inId).name : "";
     info_.outputDevice = outInfo.name;
     info_.sampleRate = audio_->getStreamSampleRate();
     info_.bufferFrames = bufferFrames;
@@ -101,8 +90,11 @@ void RtAudioBackend::stop() {
 
 // --- Audio thread. No allocation, locks, I/O or exceptions below this line. ---
 
-int RtAudioBackend::audioCallback(void* out, void* in, unsigned int nFrames, double /*streamTime*/,
-                                  unsigned int status, void* self) {
+// `status` is not used: RtAudio's WASAPI code only sets it when captured input is
+// lost, and there is no input. WASAPI does not report output underruns to the app
+// at all, so lateness is judged from the callback timings instead.
+int RtAudioBackend::audioCallback(void* out, void* /*in*/, unsigned int nFrames,
+                                  double /*streamTime*/, unsigned int /*status*/, void* self) {
     const std::int64_t start = nowTicks();
     // Set per callback rather than once: RtAudio owns this thread, and this way we
     // don't depend on nothing else having changed MXCSR in between. Costs a few cycles.
@@ -112,10 +104,6 @@ int RtAudioBackend::audioCallback(void* out, void* in, unsigned int nFrames, dou
     auto* dst = static_cast<float*>(out);
     const unsigned int channels = backend->outChannels_;
 
-    // status flags RtAudio's input overflow / output underflow. Relaxed is enough:
-    // it's a standalone counter, nothing else is published through it.
-    if (status != 0) backend->xruns_.fetch_add(1, std::memory_order_relaxed);
-
     // Never expected, but if the block is bigger than our buffers, output silence
     // rather than grow them (allocation) or write out of bounds.
     if (nFrames > backend->mono_.size()) {
@@ -123,17 +111,15 @@ int RtAudioBackend::audioCallback(void* out, void* in, unsigned int nFrames, dou
         return 0;
     }
 
-    // Without a mic (output-only stream) RtAudio passes no input: use silence instead.
-    const float* src = in != nullptr ? static_cast<const float*>(in) : backend->silence_.data();
     float* mono = backend->mono_.data();
-    backend->process_(src, mono, static_cast<int>(nFrames), backend->user_);
+    backend->process_(backend->silence_.data(), mono, static_cast<int>(nFrames), backend->user_);
 
     // Output is interleaved: L R L R ...
     for (unsigned int i = 0; i < nFrames; ++i)
         for (unsigned int c = 0; c < channels; ++c)
             dst[i * channels + c] = mono[i];
 
-    const CallbackTiming timing{start, nowTicks() - start, nFrames, status != 0};
+    const CallbackTiming timing{start, nowTicks() - start, nFrames};
     if (!backend->timings_.try_push(timing))
         backend->droppedTimings_.fetch_add(1, std::memory_order_relaxed);
     return 0;
