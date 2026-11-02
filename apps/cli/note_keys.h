@@ -10,9 +10,9 @@ namespace cli {
 // the middle letter row is the white keys (A = C ... ; = E an octave up) and the
 // row above it the black keys (W = C# ... P = D#).
 //
-// Keys are Windows virtual key codes, which name the physical key whatever the
-// keyboard language is ('A' is the A key even when typing Hebrew). They are plain
-// numbers, so this class needs no Windows header and is tested without a console.
+// Keys are Windows virtual key codes, which name the physical key in any keyboard
+// layout. They are plain numbers, so this class needs no Windows header and is
+// tested without a console.
 //
 // Main thread only.
 class NoteKeys {

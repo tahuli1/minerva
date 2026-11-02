@@ -31,7 +31,6 @@ void apply(const Settings& settings, minerva::Engine& engine) {
     engine.distortion().setDrive(settings.drive);
     engine.delay().setFeedback(settings.feedback);
     engine.delay().setMix(settings.mix);
-    engine.setWaveform(settings.waveform);
 }
 
 bool handleKey(int key, Settings& settings) {

@@ -47,7 +47,10 @@ void runControlLoop(minerva::Engine& engine, cli::Settings& settings) {
                 if (e.key == VK_ESCAPE) return;
                 if (auto note = noteKeys.press(e.key, settings.octave)) {
                     engine.noteOn(*note, settings.velocity);
-                } else if (cli::handleKey(e.key, settings)) {
+                } else {
+                    const minerva::Waveform waveform = settings.waveform;
+                    if (!cli::handleKey(e.key, settings)) break;
+                    if (settings.waveform != waveform) engine.setWaveform(settings.waveform);
                     cli::apply(settings, engine);
                     cli::printSettings(settings);
                 }
@@ -72,6 +75,7 @@ int main() {
     minerva::Engine engine;
     cli::Settings settings;
     cli::apply(settings, engine);       // Before prepare(), so the smoothers start at these values.
+    engine.setWaveform(settings.waveform);
     engine.distortion().setLevel(0.3f); // the overdrive peaks near full scale; keep headphones safe.
 
     // Declared after the engine so it is destroyed first: the stream stops before

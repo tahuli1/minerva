@@ -41,6 +41,10 @@ A S D F G H J K L ;      white keys: C D E F G A B C D E
 `A` is middle C. Hold several keys for a chord. The keys are read by position, so
 they work whatever the keyboard language is.
 
+Run it in a console window (cmd, PowerShell or Windows Terminal). Terminals
+embedded in editors, such as VS Code's, pass on characters rather than keys, so
+key releases never arrive and notes don't play properly.
+
 | Key | Action |
 |---|---|
 | `Z` / `X` | octave down / up |

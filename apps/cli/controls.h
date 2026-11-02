@@ -20,6 +20,9 @@ struct Settings {
     float mix = 0.35f;
 };
 
+// Pushes the effect parameters. Cheap and safe to repeat: each is one atomic store.
+// The waveform is not included: it is a command in the engine's queue, sent only
+// when it changes.
 void apply(const Settings& settings, minerva::Engine& engine);
 
 // `key` is a Windows virtual key code. Returns true if the key changed a setting.
