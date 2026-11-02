@@ -4,6 +4,7 @@
 
 #include "console_keyboard.h"
 #include "controls.h"
+#include "display.h"
 #include "engine/engine.h"
 #include "note_keys.h"
 #include "rt/timing_stats.h"
@@ -40,14 +41,15 @@ void runEngine(const float* in, float* out, int n, void* user) {
 // Main thread, not RT. It sleeps until a key arrives, then turns it into commands
 // for the engine. noteOn()/noteOff() never block; their queue holds 256 commands,
 // far more than hands can press between two audio blocks, so they are not checked.
-// Once a second it also drains the callback timings and prints their summary.
+// Once a second it also drains the callback timings and adds a row to the table.
 void runControlLoop(minerva::Engine& engine, cli::Settings& settings,
                     minerva::RtAudioBackend& backend) {
     cli::ConsoleKeyboard keyboard;
     cli::NoteKeys noteKeys;
     minerva::TimingStats stats(backend.ticksPerSecond(), static_cast<int>(backend.info().sampleRate));
+    cli::TimingTable table;
     auto nextReport = std::chrono::steady_clock::now() + kReportPeriod;
-    cli::printHelp();
+    table.printTitle();
     cli::printSettings(settings);
     while (!g_quit.load()) {
         for (const cli::KeyEvent& e : keyboard.wait(kWaitMs)) {
@@ -77,7 +79,7 @@ void runControlLoop(minerva::Engine& engine, cli::Settings& settings,
         minerva::CallbackTiming timing;
         while (backend.popTiming(timing)) stats.add(timing);
         if (std::chrono::steady_clock::now() >= nextReport) {
-            cli::printTiming(stats.summary(), backend.droppedTimings());
+            table.printRow(stats.summary(), backend.droppedTimings());
             cli::printSettings(settings);
             stats.reset();
             nextReport += kReportPeriod;
@@ -105,17 +107,9 @@ int main() {
     }
 
     const minerva::StreamInfo& info = backend.info();
-    std::printf("API:           %s\n", info.api.c_str());
-    if (info.inputDevice.empty())
-        std::printf("Input device:  none (output only)\n");
-    else
-        std::printf("Input device:  %s (1 channel, unused until the looper)\n", info.inputDevice.c_str());
-    std::printf("Output device: %s (%u channels)\n", info.outputDevice.c_str(), info.outputChannels);
-    std::printf("Sample rate:   %u Hz\n", info.sampleRate);
-    std::printf("Buffer size:   %u frames (%.2f ms)\n", info.bufferFrames,
-                1000.0 * info.bufferFrames / info.sampleRate);
-    std::printf("Reported stream latency: %ld frames\n", info.latencyFrames);
-    std::printf("Sound:         %d-voice synth -> distortion -> delay\n", minerva::Synth::kVoices);
+    cli::printTitle();
+    cli::printAudio(info);
+    cli::printKeys();
 
     // Prepare with the buffer size the device actually gave us, before audio starts.
     // This is where the delay allocates its 2-second buffer.
@@ -125,11 +119,9 @@ int main() {
         std::fprintf(stderr, "Failed to start audio stream: %s\n", backend.lastError().c_str());
         return 1;
     }
-    std::printf("Running. Press Esc or Ctrl+C to stop.\n");
-
     runControlLoop(engine, settings, backend);
 
     backend.stop();
-    std::printf("\nStopped. xruns: %llu\n", static_cast<unsigned long long>(backend.xrunCount()));
+    std::printf("\n\nStopped. Driver xruns: %llu\n", static_cast<unsigned long long>(backend.xrunCount()));
     return 0;
 }

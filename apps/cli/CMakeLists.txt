@@ -11,6 +11,8 @@ add_executable(minerva_cli
     console_keyboard.h
     controls.cpp
     controls.h
+    display.cpp
+    display.h
     main.cpp)
 target_link_libraries(minerva_cli PRIVATE minerva_core minerva_backend_rtaudio minerva_note_keys
                                           minerva_warnings)

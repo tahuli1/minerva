@@ -61,14 +61,18 @@ they don't click.
 
 A microphone is not needed; it will be used for recording into the looper.
 
-Every audio callback is timed. Once a second the app prints a summary line:
+Every audio callback is timed. Under CALLBACK TIMING the app adds one row per second:
 
 ```
-callback avg 0.002 | p99.9 0.010 | max 0.010 ms (0% of 2.67 ms) | gap max 2.70 ms | xruns 0 | dropped 0
+  time |  avg us | p99.9 us |  max us | load % | gap max ms | xruns | dropped
+-------+---------+----------+---------+--------+------------+-------+--------
+    1s |     2.1 |     10.4 |    10.4 |    0.4 |       2.70 |     0 |       0
+    2s |     5.3 |     11.0 |    25.1 |    0.9 |       2.75 |     0 |       0
 ```
 
-- `avg`, `p99.9`, `max`: how long the callbacks took. The deadline is one block
-  (128 frames at 48 kHz = 2.67 ms); `max` as a share of it is the headroom left.
+- `avg`, `p99.9`, `max`: how long the callbacks took, in microseconds.
+- `load %`: the slowest callback as a share of the deadline, which is one block
+  (128 frames at 48 kHz = 2.67 ms). What is left is the headroom.
 - `gap max`: the longest time between the starts of two callbacks. Much more than
   one block means something outside the app (the OS, the driver) held the audio
   thread back.

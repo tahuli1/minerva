@@ -5,7 +5,6 @@
 #include <windows.h>
 
 #include <algorithm>
-#include <cstdio>
 
 namespace cli {
 
@@ -14,7 +13,9 @@ namespace {
 constexpr float kVelocityStep = 0.1f;
 constexpr float kMinVelocity = 0.1f; // quieter than this is hard to hear at all
 
-const char* name(minerva::Waveform waveform) {
+} // namespace
+
+const char* waveformName(minerva::Waveform waveform) {
     switch (waveform) {
     case minerva::Waveform::Sine: return "sine";
     case minerva::Waveform::Triangle: return "triangle";
@@ -23,8 +24,6 @@ const char* name(minerva::Waveform waveform) {
     }
     return "?";
 }
-
-} // namespace
 
 void apply(const Settings& settings, minerva::Engine& engine) {
     engine.distortion().setEnabled(settings.distortion);
@@ -54,30 +53,6 @@ bool handleKey(int key, Settings& settings) {
     case VK_F7: settings.distortion = !settings.distortion; return true;
     default: return false;
     }
-}
-
-void printHelp() {
-    std::printf("Play:  A S D F G H J K L ;  (white keys)   W E T Y U O P  (black keys)\n");
-    std::printf("Keys:  Z/X octave   C/V velocity   1-4 sine/triangle/saw/square\n");
-    std::printf("       F7 distortion on/off   F1/F2 drive   F3/F4 delay feedback   F5/F6 delay mix\n");
-    std::printf("       Esc quit\n");
-}
-
-void printTiming(const minerva::TimingSummary& s, std::uint64_t droppedTimings) {
-    const double load = s.deadlineMs > 0.0 ? 100.0 * s.maxMs / s.deadlineMs : 0.0;
-    std::printf("\rcallback avg %.3f | p99.9 %.3f | max %.3f ms (%.0f%% of %.2f ms) | "
-                "gap max %.2f ms | xruns %d | dropped %llu      \n",
-                s.avgMs, s.p999Ms, s.maxMs, load, s.deadlineMs, s.maxGapMs, s.driverXruns,
-                static_cast<unsigned long long>(droppedTimings));
-}
-
-void printSettings(const Settings& settings) {
-    // \r rewrites the same line, so the display stays one line while you play.
-    std::printf("\roctave %d | velocity %.1f | %-8s | distortion %-3s drive %.2f | "
-                "feedback %.2f | mix %.2f   ",
-                settings.octave, settings.velocity, name(settings.waveform),
-                settings.distortion ? "on" : "off", settings.drive, settings.feedback, settings.mix);
-    std::fflush(stdout);
 }
 
 } // namespace cli
