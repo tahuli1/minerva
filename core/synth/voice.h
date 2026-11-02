@@ -24,8 +24,10 @@ class Voice {
 public:
     // Not RT: call before audio starts.
     void prepare(int sampleRate);
-    void setWaveform(Waveform waveform);
     void setEnvelope(const AdsrParams& params);
+
+    // RT: only stores which shape the oscillator draws next.
+    void setWaveform(Waveform waveform);
 
     // RT. `note` is a MIDI-style note number (60 = middle C, 69 = A 440 Hz);
     // `velocity` is the loudness, 0..1.

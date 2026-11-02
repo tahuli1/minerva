@@ -10,6 +10,9 @@ namespace minerva {
 
 // DaisySP's Overdrive: a soft clipper with normalized output, so more drive means more
 // distortion, not more volume. `level` sets the final volume.
+//
+// It can be switched off (bypassed): the input then passes through unchanged. The
+// switch crossfades over kParamRampSeconds rather than cutting, which would click.
 class Distortion : public Effect {
 public:
     // At exactly 1.0 DaisySP's output jumps to ~3x full scale, so the drive stops short.
@@ -22,17 +25,23 @@ public:
     // Safe from any thread; changes glide over kParamRampSeconds.
     void setDrive(float drive);
     void setLevel(float level) { level_.store(level, std::memory_order_relaxed); }
+    void setEnabled(bool enabled) { enabled_.store(enabled, std::memory_order_relaxed); }
 
 private:
+    float wetTarget() const;
+
     daisysp::Overdrive overdrive_;
     float appliedDrive_ = -1.0f;
 
     std::atomic<float> drive_{0.4f};
     std::atomic<float> level_{1.0f};
+    std::atomic<bool> enabled_{true};
     SmoothedValue driveSmoothed_;
     SmoothedValue levelSmoothed_;
+    SmoothedValue wetSmoothed_; // 1 = distorted, 0 = bypassed
 
     static_assert(std::atomic<float>::is_always_lock_free);
+    static_assert(std::atomic<bool>::is_always_lock_free);
 };
 
 } // namespace minerva

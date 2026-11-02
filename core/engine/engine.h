@@ -12,21 +12,22 @@
 
 namespace minerva {
 
-// A note event on its way from the control thread to the audio thread. Events, not
+// An event on its way from the control thread to the audio thread. Events, not
 // values: a key press must never be lost or merged with another, which an atomic
 // holding "the latest note" could do.
-struct NoteCommand {
-    enum class Type : std::uint8_t { NoteOn, NoteOff };
+struct Command {
+    enum class Type : std::uint8_t { NoteOn, NoteOff, SetWaveform };
     Type type;
-    std::uint8_t note;
+    std::uint8_t value; // the note, or the waveform
     float velocity;
 };
 
 // Owns everything that makes sound: the synth, the master effect chain
 // (distortion -> delay) and the queue that brings note commands in.
 //
-// Threads: exactly one control thread calls noteOn()/noteOff() (the queue's single
-// producer), and only the audio thread calls process() (its single consumer).
+// Threads: exactly one control thread calls noteOn()/noteOff()/setWaveform() (the
+// queue's single producer), and only the audio thread calls process() (its single
+// consumer).
 class Engine {
 public:
     static constexpr std::size_t kQueueCapacity = 256;
@@ -43,6 +44,9 @@ public:
     // Control thread. Never blocks: returns false if the queue is full.
     bool noteOn(int note, float velocity);
     bool noteOff(int note);
+    // The voices belong to the audio thread, so the control thread can't change their
+    // waveform directly while audio runs (a data race); it asks through the queue.
+    bool setWaveform(Waveform waveform);
 
     // Audio thread. `in` (the mic) is not used yet; it is for the looper (Milestone 8).
     void process(const float* in, float* out, int n);
@@ -53,7 +57,9 @@ public:
     std::size_t pendingCommands() const { return commands_.size(); }
 
 private:
-    rigtorp::SPSCQueue<NoteCommand> commands_;
+    void apply(const Command& command);
+
+    rigtorp::SPSCQueue<Command> commands_;
     Synth synth_;
     Distortion distortion_;
     Delay delay_;
