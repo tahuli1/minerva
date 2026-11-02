@@ -54,10 +54,18 @@ FetchContent_MakeAvailable(googletest)
 # We build only the files we use instead of DaisySP's own CMake target: some of its
 # other files use GCC-only syntax that MSVC rejects. SOURCE_SUBDIR points at nothing
 # so that target is never configured.
+# Patched: V1.0.0 leaves Oscillator::last_out_ uninitialized, and the PolyBLEP
+# triangle feeds it back, so a voice could start from garbage (a NaN that never
+# ends, or a loud thump). The patch sets it in Init(). UPDATE_DISCONNECTED keeps
+# later configures from resetting the patched sources.
 FetchContent_Declare(daisysp
     GIT_REPOSITORY https://github.com/electro-smith/DaisySP.git
     GIT_TAG        V1.0.0
     GIT_SHALLOW    TRUE
+    UPDATE_DISCONNECTED TRUE
+    PATCH_COMMAND  ${CMAKE_COMMAND}
+                   -DPATCH=${CMAKE_CURRENT_SOURCE_DIR}/cmake/patches/daisysp-oscillator-init.patch
+                   -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/apply_patch.cmake
     SOURCE_SUBDIR  no-cmake)
 FetchContent_MakeAvailable(daisysp)
 set(DAISYSP_SRC ${daisysp_SOURCE_DIR}/Source)

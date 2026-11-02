@@ -1,0 +1,13 @@
+diff --git a/Source/Synthesis/oscillator.h b/Source/Synthesis/oscillator.h
+index 469d09a..2ac09c1 100644
+--- a/Source/Synthesis/oscillator.h
++++ b/Source/Synthesis/oscillator.h
+@@ -55,6 +55,8 @@ class Oscillator
+         amp_       = 0.5f;
+         pw_        = 0.5f;
+         phase_     = 0.0f;
++        last_out_  = 0.0f;
++        last_freq_ = 0.0f;
+         phase_inc_ = CalcPhaseInc(freq_);
+         waveform_  = WAVE_SIN;
+         eoc_       = true;
