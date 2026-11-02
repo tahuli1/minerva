@@ -1,4 +1,7 @@
 add_executable(minerva_tests
+    allocation_counter.cpp
+    allocation_counter.h
+    allocation_counter_test.cpp
     delay_test.cpp
     denormals_test.cpp
     distortion_test.cpp
