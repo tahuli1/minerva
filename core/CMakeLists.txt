@@ -4,6 +4,7 @@
 #             and one folder per concrete effect
 #   synth/    the synthesizer: voices built from DaisySP, and the voice pool
 #   engine/   owns the synth, the effect chain and the note-command queue
+#   rt/       real-time plumbing: callback timing and its statistics
 add_library(minerva_core STATIC
     dsp/smoothed_value.h
     effects/delay/delay.cpp
@@ -15,6 +16,9 @@ add_library(minerva_core STATIC
     effects/effect_chain.h
     engine/engine.cpp
     engine/engine.h
+    rt/callback_timing.h
+    rt/timing_stats.cpp
+    rt/timing_stats.h
     synth/synth.cpp
     synth/synth.h
     synth/voice.cpp
