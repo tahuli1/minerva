@@ -61,6 +61,21 @@ they don't click.
 
 A microphone is not needed; it will be used for recording into the looper.
 
+Every audio callback is timed. Once a second the app prints a summary line:
+
+```
+callback avg 0.002 | p99.9 0.010 | max 0.010 ms (0% of 2.67 ms) | gap max 2.70 ms | xruns 0 | dropped 0
+```
+
+- `avg`, `p99.9`, `max`: how long the callbacks took. The deadline is one block
+  (128 frames at 48 kHz = 2.67 ms); `max` as a share of it is the headroom left.
+- `gap max`: the longest time between the starts of two callbacks. Much more than
+  one block means something outside the app (the OS, the driver) held the audio
+  thread back.
+- `xruns`: blocks the driver flagged as late in that second.
+- `dropped`: timings lost because the display fell behind (the audio thread never
+  waits for it).
+
 Turn the volume down before the first run.
 
 ## Test

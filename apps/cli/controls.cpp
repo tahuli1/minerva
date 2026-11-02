@@ -63,6 +63,14 @@ void printHelp() {
     std::printf("       Esc quit\n");
 }
 
+void printTiming(const minerva::TimingSummary& s, std::uint64_t droppedTimings) {
+    const double load = s.deadlineMs > 0.0 ? 100.0 * s.maxMs / s.deadlineMs : 0.0;
+    std::printf("\rcallback avg %.3f | p99.9 %.3f | max %.3f ms (%.0f%% of %.2f ms) | "
+                "gap max %.2f ms | xruns %d | dropped %llu      \n",
+                s.avgMs, s.p999Ms, s.maxMs, load, s.deadlineMs, s.maxGapMs, s.driverXruns,
+                static_cast<unsigned long long>(droppedTimings));
+}
+
 void printSettings(const Settings& settings) {
     // \r rewrites the same line, so the display stays one line while you play.
     std::printf("\roctave %d | velocity %.1f | %-8s | distortion %-3s drive %.2f | "

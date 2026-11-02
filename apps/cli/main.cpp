@@ -6,9 +6,11 @@
 #include "controls.h"
 #include "engine/engine.h"
 #include "note_keys.h"
+#include "rt/timing_stats.h"
 #include "rtaudio/rtaudio_backend.h"
 
 #include <atomic>
+#include <chrono>
 #include <cstdio>
 
 namespace {
@@ -27,6 +29,9 @@ BOOL WINAPI onConsoleCtrl(DWORD type) {
     return TRUE; // Handled: don't let Windows kill the process before we close the stream.
 }
 
+// How often the main thread summarizes the callback timings.
+constexpr std::chrono::seconds kReportPeriod{1};
+
 // Audio thread. `user` is the engine.
 void runEngine(const float* in, float* out, int n, void* user) {
     static_cast<minerva::Engine*>(user)->process(in, out, n);
@@ -35,9 +40,13 @@ void runEngine(const float* in, float* out, int n, void* user) {
 // Main thread, not RT. It sleeps until a key arrives, then turns it into commands
 // for the engine. noteOn()/noteOff() never block; their queue holds 256 commands,
 // far more than hands can press between two audio blocks, so they are not checked.
-void runControlLoop(minerva::Engine& engine, cli::Settings& settings) {
+// Once a second it also drains the callback timings and prints their summary.
+void runControlLoop(minerva::Engine& engine, cli::Settings& settings,
+                    minerva::RtAudioBackend& backend) {
     cli::ConsoleKeyboard keyboard;
     cli::NoteKeys noteKeys;
+    minerva::TimingStats stats(backend.ticksPerSecond(), static_cast<int>(backend.info().sampleRate));
+    auto nextReport = std::chrono::steady_clock::now() + kReportPeriod;
     cli::printHelp();
     cli::printSettings(settings);
     while (!g_quit.load()) {
@@ -63,6 +72,15 @@ void runControlLoop(minerva::Engine& engine, cli::Settings& settings) {
                 for (int note : noteKeys.releaseAll()) engine.noteOff(note);
                 break;
             }
+        }
+
+        minerva::CallbackTiming timing;
+        while (backend.popTiming(timing)) stats.add(timing);
+        if (std::chrono::steady_clock::now() >= nextReport) {
+            cli::printTiming(stats.summary(), backend.droppedTimings());
+            cli::printSettings(settings);
+            stats.reset();
+            nextReport += kReportPeriod;
         }
     }
 }
@@ -109,7 +127,7 @@ int main() {
     }
     std::printf("Running. Press Esc or Ctrl+C to stop.\n");
 
-    runControlLoop(engine, settings);
+    runControlLoop(engine, settings, backend);
 
     backend.stop();
     std::printf("\nStopped. xruns: %llu\n", static_cast<unsigned long long>(backend.xrunCount()));

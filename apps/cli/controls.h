@@ -2,6 +2,9 @@
 
 #include "engine/engine.h"
 #include "note_keys.h"
+#include "rt/timing_stats.h"
+
+#include <cstdint>
 
 namespace cli {
 
@@ -31,5 +34,8 @@ bool handleKey(int key, Settings& settings);
 
 void printHelp();
 void printSettings(const Settings& settings);
+// Prints one line of callback timing above the settings line, which the caller
+// prints again afterwards, so the timing log scrolls and the settings stay last.
+void printTiming(const minerva::TimingSummary& summary, std::uint64_t droppedTimings);
 
 } // namespace cli
