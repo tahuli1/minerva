@@ -103,7 +103,7 @@ If a change might violate these rules, stop and point it out instead of doing it
 ## Milestones
 1. **Skeleton:** ✅ CMake project, RtAudio via FetchContent, CLI pass-through.
 2. **Effects:** ✅ distortion, delay, effect chain, parameter smoothing, offline WAV tool, CI.
-3. **Synth:** rename to Minerva, oscillators, ADSR, 16-voice pool, keyboard input (key down/up) through an SPSC command queue; runs without a mic (output-only stream when none is present).
+3. **Synth:** ✅ rename to Minerva, oscillators, ADSR, 16-voice pool, keyboard input (key down/up) through an SPSC command queue; runs without a mic (output-only stream when none is present).
 4. **Measurement:** callback timing vs. deadline, own xrun detection, lock-free metrics buffer, CSV export + plotting script, loopback latency tool, a test that fails if the callback allocates, and an ARM (Cortex-M) build of `core/` in CI.
 5. **Sounds:** filter + filter envelope, presets (keys, pad, bass, lead, pluck), reverb.
 6. **Sequencer + drums:** sample-based clock, 16-step patterns, synthesized drums, recording into patterns, save/load songs (JSON, nlohmann/json), offline render to WAV (dr_wav).
