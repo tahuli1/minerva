@@ -61,7 +61,14 @@ they don't click.
 
 A microphone is not needed; it will be used for recording into the looper.
 
-Every audio callback is timed. Under CALLBACK TIMING the app adds one row per second:
+Every audio callback is timed. To see the measurements, start the app with
+`--stats`:
+
+```
+build\apps\cli\Release\minerva_cli.exe --stats
+```
+
+Under CALLBACK TIMING it then adds one row per second:
 
 ```
   time |  avg us | p99.9 us |  max us | load % | gap max ms | xruns | dropped

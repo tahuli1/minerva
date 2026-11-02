@@ -16,7 +16,8 @@ namespace cli {
 
 void printTitle();
 void printAudio(const minerva::StreamInfo& info);
-void printKeys();
+// `showStats`: whether the app was started with --stats, so the help can say how.
+void printKeys(bool showStats);
 
 // The CALLBACK TIMING table. The header is printed again every kRowsPerHeader
 // rows, so the column names stay on screen while the table scrolls.

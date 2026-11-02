@@ -13,6 +13,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <cstring>
 
 namespace {
 
@@ -41,15 +42,18 @@ void runEngine(const float* in, float* out, int n, void* user) {
 // Main thread, not RT. It sleeps until a key arrives, then turns it into commands
 // for the engine. noteOn()/noteOff() never block; their queue holds 256 commands,
 // far more than hands can press between two audio blocks, so they are not checked.
-// Once a second it also drains the callback timings and adds a row to the table.
+// It also drains the callback timings, with or without --stats, so the audio
+// thread's work is the same either way; with --stats it adds a row to the table
+// once a second.
 void runControlLoop(minerva::Engine& engine, cli::Settings& settings,
-                    minerva::RtAudioBackend& backend) {
+                    minerva::RtAudioBackend& backend, bool showStats) {
     cli::ConsoleKeyboard keyboard;
     cli::NoteKeys noteKeys;
     minerva::TimingStats stats(backend.ticksPerSecond(), static_cast<int>(backend.info().sampleRate));
     cli::TimingTable table;
     auto nextReport = std::chrono::steady_clock::now() + kReportPeriod;
-    table.printTitle();
+    if (showStats) table.printTitle();
+    else std::printf("\n");
     cli::printSettings(settings);
     while (!g_quit.load()) {
         for (const cli::KeyEvent& e : keyboard.wait(kWaitMs)) {
@@ -79,8 +83,10 @@ void runControlLoop(minerva::Engine& engine, cli::Settings& settings,
         minerva::CallbackTiming timing;
         while (backend.popTiming(timing)) stats.add(timing);
         if (std::chrono::steady_clock::now() >= nextReport) {
-            table.printRow(stats.summary(), backend.droppedTimings());
-            cli::printSettings(settings);
+            if (showStats) {
+                table.printRow(stats.summary(), backend.droppedTimings());
+                cli::printSettings(settings);
+            }
             stats.reset();
             nextReport += kReportPeriod;
         }
@@ -89,7 +95,18 @@ void runControlLoop(minerva::Engine& engine, cli::Settings& settings,
 
 } // namespace
 
-int main() {
+int main(int argc, char** argv) {
+    // --stats shows the callback timing table; without it the screen is just for playing.
+    bool showStats = false;
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--stats") == 0) {
+            showStats = true;
+        } else {
+            std::fprintf(stderr, "Unknown option: %s\nUsage: minerva_cli [--stats]\n", argv[i]);
+            return 1;
+        }
+    }
+
     SetConsoleCtrlHandler(onConsoleCtrl, TRUE);
 
     minerva::Engine engine;
@@ -109,7 +126,7 @@ int main() {
     const minerva::StreamInfo& info = backend.info();
     cli::printTitle();
     cli::printAudio(info);
-    cli::printKeys();
+    cli::printKeys(showStats);
 
     // Prepare with the buffer size the device actually gave us, before audio starts.
     // This is where the delay allocates its 2-second buffer.
@@ -119,7 +136,7 @@ int main() {
         std::fprintf(stderr, "Failed to start audio stream: %s\n", backend.lastError().c_str());
         return 1;
     }
-    runControlLoop(engine, settings, backend);
+    runControlLoop(engine, settings, backend, showStats);
 
     backend.stop();
     std::printf("\n\nStopped. Driver xruns: %llu\n", static_cast<unsigned long long>(backend.xrunCount()));

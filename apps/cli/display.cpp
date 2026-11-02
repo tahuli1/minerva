@@ -48,12 +48,14 @@ void printAudio(const minerva::StreamInfo& info) {
     printField("Sound", text);
 }
 
-void printKeys() {
+void printKeys(bool showStats) {
     printSection("KEYS");
     printField("Play", "A S D F G H J K L ;  white keys    W E T Y U O P  black keys");
     printField("Sound", "Z/X octave    C/V velocity    1-4 waveform");
     printField("Effects", "F7 distortion on/off   F1/F2 drive   F3/F4 feedback   F5/F6 mix");
     printField("Quit", "Esc (or Ctrl+C)");
+    printField("Stats", showStats ? "callback timing below, one row per second"
+                                  : "start with --stats to see callback timing");
 }
 
 void TimingTable::printTitle() {
