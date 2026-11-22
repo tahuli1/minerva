@@ -10,7 +10,8 @@ namespace gui {
 // Each is one call per frame (immediate mode) and returns true when the user
 // changed something.
 
-// A rotary knob: drag up or down to turn it. Dimmed when `enabled` is false.
+// A rotary knob: circle the mouse around it, clockwise for more. Dimmed, and
+// fixed, when `enabled` is false.
 bool knob(const char* id, const char* label, float* value, float min, float max, bool enabled);
 
 enum class WaveShape { Sine, Triangle, Saw, Square };

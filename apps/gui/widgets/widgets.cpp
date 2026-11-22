@@ -27,19 +27,32 @@ bool knob(const char* id, const char* label, float* value, float min, float max,
     constexpr float kSpan = std::numbers::pi_v<float> * 1.5f;
 
     const ImVec2 origin = ImGui::GetCursorScreenPos();
+    const ImVec2 center(origin.x + kSize / 2, origin.y + kSize / 2);
     ImGui::InvisibleButton(id, ImVec2(kSize, kSize + 48));
     bool changed = false;
     if (ImGui::IsItemActive() && enabled) {
-        // 200 pixels of mouse travel cover the whole range.
-        const float delta = -ImGui::GetIO().MouseDelta.y * (max - min) / 200.0f;
-        if (delta != 0.0f) {
-            *value = std::clamp(*value + delta, min, max);
-            changed = true;
+        // Turned like a real knob: the mouse circles the center, clockwise for
+        // more. Only the change in angle counts, so grabbing the knob anywhere
+        // doesn't make it jump.
+        const ImGuiIO& io = ImGui::GetIO();
+        const ImVec2 now(io.MousePos.x - center.x, io.MousePos.y - center.y);
+        const ImVec2 before(now.x - io.MouseDelta.x, now.y - io.MouseDelta.y);
+        // Near the center a small move swings the angle wildly; ignore it there.
+        constexpr float kMinRadius = 8.0f;
+        if (std::hypot(now.x, now.y) > kMinRadius && std::hypot(before.x, before.y) > kMinRadius) {
+            constexpr float kPi = std::numbers::pi_v<float>;
+            float turn = std::atan2(now.y, now.x) - std::atan2(before.y, before.x);
+            if (turn > kPi) turn -= 2 * kPi; // crossing the left, where atan2 jumps by a full turn
+            if (turn < -kPi) turn += 2 * kPi;
+            const float next = std::clamp(*value + turn / kSpan * (max - min), min, max);
+            if (next != *value) {
+                *value = next;
+                changed = true;
+            }
         }
     }
 
     ImDrawList* draw = ImGui::GetWindowDrawList();
-    const ImVec2 center(origin.x + kSize / 2, origin.y + kSize / 2);
     const float t = (*value - min) / (max - min);
     const float angle = kStart + kSpan * t;
     draw->AddCircleFilled(center, kRadius, color::kInset, 48);
