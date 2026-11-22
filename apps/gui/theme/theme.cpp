@@ -2,6 +2,8 @@
 
 #include <filesystem>
 
+#include <implot.h>
+
 namespace gui {
 
 namespace {
@@ -52,6 +54,21 @@ Fonts applyTheme() {
     c[ImGuiCol_Button] = vec(color::kLine);
     c[ImGuiCol_ButtonHovered] = vec(color::kDim);
     c[ImGuiCol_ButtonActive] = vec(color::kPurpleBack);
+
+    // The graph sits on the panel like the cards do.
+    ImPlotStyle& plot = ImPlot::GetStyle();
+    plot.PlotPadding = ImVec2(0, 0);
+    plot.LegendPadding = ImVec2(10, 8);
+    plot.LineWeight = 1.5f;
+    ImVec4* p = plot.Colors;
+    p[ImPlotCol_FrameBg] = vec(color::kPanel);
+    p[ImPlotCol_PlotBg] = vec(color::kInset);
+    p[ImPlotCol_PlotBorder] = vec(color::kInset);
+    p[ImPlotCol_LegendBg] = vec(color::kPanel);
+    p[ImPlotCol_LegendBorder] = vec(color::kLine);
+    p[ImPlotCol_LegendText] = vec(color::kMuted);
+    p[ImPlotCol_AxisText] = vec(color::kMuted);
+    p[ImPlotCol_AxisGrid] = vec(color::kLine);
     return fonts;
 }
 

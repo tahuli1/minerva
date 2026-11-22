@@ -120,9 +120,10 @@ struct View {
     gui::Fonts fonts;
     gui::Texture logo;
     minerva::TimingSummary timing; // the last full second
+    int lateTotal = 0;             // late callbacks since the start
 };
 
-void drawUi(App& a, const View& view, const minerva::RtAudioBackend& backend) {
+void drawUi(App& a, const View& view, const gui::TimingHistory& history, const minerva::RtAudioBackend& backend) {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
     ImGui::SetNextWindowSize(viewport->WorkSize);
@@ -141,7 +142,11 @@ void drawUi(App& a, const View& view, const minerva::RtAudioBackend& backend) {
     gui::drawEnginePanel(view.fonts, view.timing, size);
 
     ImGui::Dummy(ImVec2(0, gap - ImGui::GetStyle().ItemSpacing.y));
-    const int mouseNote = gui::drawKeysPanel(a.settings, a.held, ImVec2(ImGui::GetContentRegionAvail().x, 230));
+    const int mouseNote = gui::drawKeysPanel(a.settings, a.held, ImVec2(ImGui::GetContentRegionAvail().x, 190));
+    ImGui::Dummy(ImVec2(0, gap - ImGui::GetStyle().ItemSpacing.y));
+    const minerva::StreamInfo& info = backend.info();
+    gui::drawTimingPanel(history, 1000.0 * info.bufferFrames / info.sampleRate, view.lateTotal,
+                         ImGui::GetContentRegionAvail());
 
     // A change made with the mouse reaches the engine the way a key press does.
     if (changed.waveform) a.engine->setWaveform(a.settings.waveform);
@@ -190,6 +195,9 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
     // WIC needs COM, initialized above.
     view.logo = gui::loadPngResource(window.device(), IDR_LOGO, gui::kLogoSize, gui::kLogoSize);
     minerva::TimingStats stats(backend.ticksPerSecond(), static_cast<int>(backend.info().sampleRate));
+    // Sized here, once: ten seconds of callbacks at this stream's block rate.
+    gui::TimingHistory history(10.0, static_cast<double>(backend.info().sampleRate) / backend.info().bufferFrames,
+                               backend.ticksPerSecond());
     auto nextSummary = std::chrono::steady_clock::now() + std::chrono::seconds(1);
 
     if (!backend.start()) {
@@ -213,9 +221,13 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
 
         // Drained every frame, so the queue never fills; summarized once a second.
         minerva::CallbackTiming timing;
-        while (backend.popTiming(timing)) stats.add(timing);
+        while (backend.popTiming(timing)) {
+            stats.add(timing);
+            history.add(timing);
+        }
         if (std::chrono::steady_clock::now() >= nextSummary) {
             view.timing = stats.summary();
+            view.lateTotal += view.timing.lateCallbacks;
             stats.reset();
             nextSummary += std::chrono::seconds(1);
         }
@@ -223,7 +235,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
-        drawUi(a, view, backend);
+        drawUi(a, view, history, backend);
         ImGui::Render();
         window.beginFrame(background);
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cstdio>
 
+#include <implot.h>
+
 namespace gui {
 
 namespace {
@@ -196,6 +198,42 @@ int drawKeysPanel(const app::Settings& settings, std::span<const int> held, ImVe
     const int note = pianoKeys("##piano", firstNote, held, labels, ImGui::GetContentRegionAvail());
     endPanel();
     return note;
+}
+
+void drawTimingPanel(const TimingHistory& history, double deadlineMs, int lateTotal, ImVec2 size) {
+    constexpr double kSeconds = 10.0;
+    beginPanel("timing", size);
+    sectionTitle("C A L L B A C K   T I M E");
+
+    char late[64];
+    std::snprintf(late, sizeof late, "late callbacks since start  %d", lateTotal);
+    ImGui::SameLine(ImGui::GetContentRegionMax().x - ImGui::CalcTextSize(late).x);
+    ImGui::PushStyleColor(ImGuiCol_Text, lateTotal == 0 ? color::kGreen : color::kOrange);
+    ImGui::TextUnformatted(late);
+    ImGui::PopStyleColor();
+
+    constexpr ImPlotFlags kFlags =
+        ImPlotFlags_NoMenus | ImPlotFlags_NoBoxSelect | ImPlotFlags_NoMouseText | ImPlotFlags_NoInputs |
+        ImPlotFlags_NoLegend; // the deadline is named by its tag on the axis instead
+    if (ImPlot::BeginPlot("##timing", ImGui::GetContentRegionAvail(), kFlags)) {
+        ImPlot::SetupAxes("seconds", "\xC2\xB5s"); // UTF-8 for "µs"
+        // Logarithmic: a callback takes microseconds and the deadline is
+        // milliseconds, hundreds of times more. On a linear axis every point
+        // would lie flat on the bottom; here each tenfold step gets equal height.
+        ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Log10);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, 1.0, 10000.0, ImPlotCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, history.latestTime() - kSeconds, history.latestTime(), ImPlotCond_Always);
+
+        const double deadlineUs = 1000.0 * deadlineMs;
+        const ImVec4 orange = ImGui::ColorConvertU32ToFloat4(color::kOrange);
+        ImPlot::SetNextLineStyle(orange, 2.0f);
+        ImPlot::PlotInfLines("deadline", &deadlineUs, 1, ImPlotInfLinesFlags_Horizontal);
+        ImPlot::TagY(deadlineUs, orange, "deadline");
+        ImPlot::SetNextLineStyle(ImGui::ColorConvertU32ToFloat4(color::kPurple));
+        ImPlot::PlotLine("callback", history.times(), history.durations(), history.size(), 0, history.offset());
+        ImPlot::EndPlot();
+    }
+    endPanel();
 }
 
 } // namespace gui

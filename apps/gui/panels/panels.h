@@ -1,6 +1,7 @@
 #pragma once
 
 #include "keyboard/controls.h"
+#include "plot/timing_history.h"
 #include "rt/timing_stats.h"
 #include "rtaudio/rtaudio_backend.h"
 #include "theme/theme.h"
@@ -36,5 +37,9 @@ void drawEnginePanel(const Fonts& fonts, const minerva::TimingSummary& timing, I
 // `held` counts, by note, what holds each note down. Returns the note the mouse
 // holds down, or -1.
 int drawKeysPanel(const app::Settings& settings, std::span<const int> held, ImVec2 size);
+
+// The live graph: every callback of the last seconds against the deadline, and
+// the late callbacks counted since the start.
+void drawTimingPanel(const TimingHistory& history, double deadlineMs, int lateTotal, ImVec2 size);
 
 } // namespace gui
