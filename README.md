@@ -92,6 +92,16 @@ Under CALLBACK TIMING it then adds one row per second:
 
 Turn the volume down before the first run.
 
+Options for measuring (all optional):
+
+| Option | What it does |
+|---|---|
+| `--stats` | show the callback timing table |
+| `--buffer FRAMES` | block size to ask the device for (default 128) |
+| `--load THREADS` | keep the CPU busy with that many threads at normal priority |
+| `--csv FILE` | write every callback's timing to a CSV file |
+| `--seconds N` | quit after N seconds, for unattended runs |
+
 ## Test
 
 ```
