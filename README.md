@@ -106,6 +106,23 @@ At startup the AUDIO section shows the audio thread's priority. RtAudio's WASAPI
 thread joins MMCSS as "Pro Audio", and it shows as priority 15 (normal threads
 are 0).
 
+## Experiment: does it hold the deadline under load?
+
+`tools/buffer_experiment.py` runs the app for 128, 256 and 512-frame blocks, with
+no load and with one busy thread per CPU core, and charts late callbacks, the
+longest gap between callbacks, and the jitter at 128 frames. It needs Python with
+matplotlib (`python -m pip install matplotlib`):
+
+```
+python tools/buffer_experiment.py --seconds 30
+```
+
+Results go to `results/`. Why it stops at 128 frames: in WASAPI shared mode
+Windows mixes every 2.67 ms (128 frames at 48 kHz). Asking for a smaller block
+only makes RtAudio split each period into several back-to-back callbacks; the
+sound still leaves at the same pace, so latency does not drop. Going lower needs
+WASAPI exclusive mode.
+
 ## Test
 
 ```
@@ -119,4 +136,5 @@ core/       DSP and effects, portable C++ with no OS headers
 backends/   audio device I/O (currently RtAudio over WASAPI)
 apps/cli/   command-line app
 tests/      unit tests
+tools/      the buffer-size experiment script
 ```
