@@ -56,7 +56,6 @@ bool RtAudioBackend::open(const AudioConfig& config, ProcessFn process, void* us
 
     // Allocate the scratch buffers here, before the stream starts: the callback must never allocate.
     mono_.assign(bufferFrames, 0.0f);
-    silence_.assign(bufferFrames, 0.0f);
 
     info_.api = RtAudio::getApiDisplayName(audio_->getCurrentApi());
     info_.outputDevice = outInfo.name;
@@ -101,6 +100,9 @@ int RtAudioBackend::audioCallback(void* out, void* /*in*/, unsigned int nFrames,
     ScopedNoDenormals noDenormals;
 
     auto* backend = static_cast<RtAudioBackend*>(self);
+    // Once, on the first callback: one cheap, non-blocking query.
+    if (backend->audioThreadPriority_.load(std::memory_order_relaxed) == kPriorityUnknown)
+        backend->audioThreadPriority_.store(GetThreadPriority(GetCurrentThread()), std::memory_order_relaxed);
     auto* dst = static_cast<float*>(out);
     const unsigned int channels = backend->outChannels_;
 
@@ -112,7 +114,7 @@ int RtAudioBackend::audioCallback(void* out, void* /*in*/, unsigned int nFrames,
     }
 
     float* mono = backend->mono_.data();
-    backend->process_(backend->silence_.data(), mono, static_cast<int>(nFrames), backend->user_);
+    backend->process_(mono, static_cast<int>(nFrames), backend->user_);
 
     // Output is interleaved: L R L R ...
     for (unsigned int i = 0; i < nFrames; ++i)

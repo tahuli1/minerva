@@ -15,9 +15,9 @@ class RtAudio;
 
 namespace minerva {
 
-// Mono in, mono out, n frames. Runs on the audio thread, so it must follow the RT rules.
-// A plain function pointer (not std::function) so calling it can never allocate.
-using ProcessFn = void (*)(const float* in, float* out, int n, void* user);
+// Fills n frames of mono output. Runs on the audio thread, so it must follow the RT
+// rules. A plain function pointer (not std::function) so calling it can never allocate.
+using ProcessFn = void (*)(float* out, int n, void* user);
 
 struct AudioConfig {
     unsigned int sampleRate = 48000;
@@ -36,9 +36,7 @@ struct StreamInfo {
 
 // Output-only audio stream on the default device via RtAudio (WASAPI). Processing is
 // mono and the result is copied to every output channel. The mic is not opened:
-// nothing uses it yet (it would come back with the looper, a bonus milestone), and
-// an open mic shows the Windows "microphone in use" icon. `in` is a block of
-// silence, so the process function never has to check.
+// nothing records, and an open mic shows the Windows "microphone in use" icon.
 class RtAudioBackend {
 public:
     RtAudioBackend();
@@ -64,6 +62,12 @@ public:
     // The rate of the clock the timings are in (QueryPerformanceFrequency).
     double ticksPerSecond() const { return ticksPerSecond_; }
 
+    // The audio thread's Windows priority (GetThreadPriority), read once on its
+    // first callback; kPriorityUnknown until then. Shows whether MMCSS, which
+    // RtAudio's WASAPI thread joins as "Pro Audio", really raised it.
+    static constexpr int kPriorityUnknown = -1000;
+    int audioThreadPriority() const { return audioThreadPriority_.load(std::memory_order_relaxed); }
+
 private:
     static int audioCallback(void* out, void* in, unsigned int nFrames, double streamTime,
                              unsigned int status, void* self);
@@ -72,7 +76,6 @@ private:
     ProcessFn process_ = nullptr;
     void* user_ = nullptr;
     std::vector<float> mono_;    // Sized in open(), never resized while running.
-    std::vector<float> silence_; // Passed as `in`, since there is no mic.
     unsigned int outChannels_ = 0;
 
     // About 11 s of 128-frame blocks at 48 kHz, so the main thread can stall for a
@@ -81,6 +84,7 @@ private:
     rigtorp::SPSCQueue<CallbackTiming> timings_{kTimingCapacity};
     std::atomic<std::uint64_t> droppedTimings_{0};
     double ticksPerSecond_ = 0.0;
+    std::atomic<int> audioThreadPriority_{kPriorityUnknown};
     StreamInfo info_;
     std::string lastError_;
 

@@ -1,29 +1,26 @@
-# Minerva — Real-Time Music Studio
+# Minerva — Real-Time Synth
 
 ## What this is
-A small real-time music studio for Windows, written in C++. You play melodies and chords
-on synthesized instruments from the computer keyboard, add drums, build songs from
-patterns and loops, and shape the sound with effects, live, into headphones. Not tied
-to one genre. The full spec and design are in `PLAN.html` (Hebrew), kept locally (not in the repo).
+A small real-time synthesizer for Windows, written in C++. You play melodies and chords
+from the computer keyboard, through effects, live into headphones. The full spec and
+design are in `PLAN.html` (Hebrew), kept locally (not in the repo).
 
-This is a **portfolio project for real-time (RT) developer job interviews**. The point is
-not just "it makes music" — it is to demonstrate real-time engineering: hard deadlines,
-determinism, sample-accurate timing, lock-free communication, and *measured*
-latency/jitter improvements.
+This is a **portfolio project for real-time (RT) developer job interviews**, kept small
+on purpose, and developed with AI assistance. The point is not just "it makes music" —
+it is to demonstrate real-time engineering: hard deadlines, determinism, lock-free
+communication, and *measured* timing and jitter, including under load.
 
 (Started as `ukefx`, an effects processor for a ukulele through a mic. Milestones 1–2
 were built under that name; the engine, effects and tooling carry over.)
 
 ## Goals (definition of done)
 - Zero xruns (buffer underruns/overruns) over an hour of playing, even with the system under load.
-- Sample-accurate sequencing: every step lands on its exact sample, whatever the block size.
 - Measurements: per-callback processing time vs. deadline (histogram + live graph), xrun count.
-- `core/` builds for an ARM Cortex-M target in CI (embedded-ready).
 - A README with before/after numbers for every RT improvement, and a demo video.
 - Bonus: round-trip latency under 10 ms, measured with a loopback tool.
 
 ## Platform & tech
-- **OS:** Windows (primary). Keep `core/` portable — a Linux backend (JACK/ALSA) and an STM32 port may come later.
+- **OS:** Windows (primary). Keep `core/` free of OS headers, so it is tested without a sound card and a Linux backend (JACK/ALSA) could come later.
 - **Language:** C++20, MSVC, CMake.
 - **Audio I/O:** RtAudio (over WASAPI), output-only. The mic would only matter for the looper (a bonus milestone), so it is not opened. Bonus: our own WASAPI exclusive-mode backend, then ASIO.
 - **Input:** the computer keyboard (75%, no numpad), read by virtual key code with key-up events. No MIDI hardware for now.
@@ -37,18 +34,17 @@ were built under that name; the engine, effects and tooling carry over.)
 ```
 minerva/
   core/           # portable library. NO OS headers.
-    dsp/          #   building blocks: smoothing, oscillators, envelopes, filters
-    effects/      #   Effect interface, chain, set; one folder per effect
-    synth/        #   voice, voice pool, presets
-    drums/        #   drum voices
-    sequencer/    #   sample-based clock, patterns
-    rt/           #   lock-free SPSC queue
+    dsp/          #   building blocks: parameter smoothing
+    effects/      #   Effect interface and chain; one folder per effect
+    synth/        #   voice, voice pool (oscillator + envelope from DaisySP)
+    rt/           #   callback timing and its statistics
     engine/       #   owns everything above; one process() per audio block
-  backends/       # audio device I/O (rtaudio, later wasapi, asio, linux)
+  backends/       # audio device I/O (RtAudio over WASAPI)
   apps/
-    cli/          # keyboard input + text display
-    gui/          # later: ImGui front-end
-  tools/          # WAV I/O, offline render, latency measurement
+    cli/          # keyboard input + text display (keyboard/, display/, measurement/)
+    gui/          # Milestone 6: ImGui front-end
+  cmake/          # patches applied to fetched dependencies
+  tools/          # the buffer-size experiment script
   tests/
 ```
 
@@ -63,7 +59,7 @@ public:
 ```
 
 Threads: the audio thread (RT) and the control thread (keyboard, display) talk through
-SPSC queues — commands one way (note on/off, transport, edits), status and metrics the
+SPSC queues — commands one way (note on/off, waveform), callback timings the
 other — plus atomics for continuous parameters, smoothed on the audio thread.
 
 ## Real-time rules (non-negotiable)
@@ -101,22 +97,22 @@ If a change might violate these rules, stop and point it out instead of doing it
 - Talk to me in Hebrew; code, comments and docs in English.
 
 ## Milestones
-The core path, in this order: 4 → 6 → 7 → 10 → 11. Bonus milestones and bonus items
-are optional: only if there is time, never a requirement for "done".
+The project stays small: what is built (1–4), then 5 → 6 → 7, and it is done. Bonus
+milestones (A–D) are optional: only if there is time, never a requirement for "done".
 
 1. **Skeleton:** ✅ CMake project, RtAudio via FetchContent, CLI pass-through.
 2. **Effects:** ✅ distortion, delay, effect chain, parameter smoothing, offline WAV tool, CI.
 3. **Synth:** ✅ rename to Minerva, oscillators, ADSR, 16-voice pool, keyboard input (key down/up) through an SPSC command queue; runs without a mic (output-only stream when none is present).
-4. **Measurement:** callback timing vs. deadline through a lock-free queue, shown with `--stats` (4a ✅); own xrun detection from callback gaps; a test that fails if the callback allocates; an ARM (Cortex-M) build of `core/` in CI. *Bonus:* loopback latency tool, CPU cost vs. number of voices.
-6. **Sequencer + drums (lean):** sample-based clock, a 16-step drum pattern with synthesized drums, every step on its exact sample whatever the block size, play/stop and tempo. *Bonus:* melody steps, recording into patterns, swing, song mode, save/load songs (JSON, nlohmann/json), offline render to WAV (dr_wav).
-7. **RT hardening:** MMCSS, `VirtualLock`, buffer-size tuning, stress testing, LatencyMon/ETW analysis. Record before/after numbers, with a CSV export of every callback and a plotting script (histogram, time series vs. deadline) to show them.
-10. **GUI:** ImGui on-screen keyboard, step grid, parameters, live ImPlot of callback time vs. deadline.
-11. **Polish:** README with graphs, demo video, public repository.
+4. **Measurement:** ✅ callback timing vs. deadline through a lock-free queue, shown with `--stats`; late-callback detection from callback gaps; a test that fails if the callback allocates. *Bonus:* loopback latency tool, CPU cost vs. number of voices.
+5. **RT hardening:** does the audio thread hold its deadline under load, and what do bigger blocks buy? Measure callback timing and late callbacks for 128, 256 and 512-frame blocks, with no load and with heavy CPU load. 128 frames (2.67 ms) is the floor in WASAPI shared mode: Windows mixes on that period, and smaller requests only split each period into several back-to-back callbacks, without lowering latency (going lower needs exclusive mode, bonus D). RtAudio already puts its WASAPI thread under MMCSS ("Pro Audio"); the app checks and shows it. A CSV export of every callback and a plotting script show the results.
+6. **GUI:** Dear ImGui window: on-screen keyboard, waveform and effect parameters, and a live ImPlot graph of callback time vs. deadline with the late-callback count.
+7. **Polish:** README with the architecture, the before/after graphs, the bug found by stress testing and a "How this was built" note on AI-assisted development; a short demo video; public repository.
 
 Bonus milestones:
-5. **Sounds:** filter + filter envelope, presets (keys, pad, bass, lead, pluck), reverb.
-8. **Looper:** locked audio buffer, record/play/overdub in sync with the pattern; hold a key to record from the mic, with latency compensation.
-9. **Own backend:** WASAPI exclusive mode (then ASIO if hardware arrives).
+- **A. Sounds:** filter + filter envelope, presets (keys, pad, bass, lead, pluck), reverb.
+- **B. Sequencer + drums:** sample-based clock, a 16-step drum pattern, every step on its exact sample whatever the block size.
+- **C. Looper:** locked audio buffer, record/play/overdub in sync with the pattern; hold a key to record from the mic, with latency compensation.
+- **D. Own backend:** WASAPI exclusive mode (then ASIO if hardware arrives).
 
 ## Build
 ```

@@ -1,4 +1,4 @@
-#include "display.h"
+#include "display/display.h"
 
 #include "synth/synth.h"
 
@@ -41,6 +41,22 @@ void printAudio(const minerva::StreamInfo& info) {
     printField("Latency", text);
     std::snprintf(text, sizeof text, "%d-voice synth -> distortion -> delay", minerva::Synth::kVoices);
     printField("Sound", text);
+}
+
+void printAudioThread(int priority, int loadThreads) {
+    char text[160];
+    if (priority == minerva::RtAudioBackend::kPriorityUnknown) {
+        printField("Audio thread", "priority unknown (no callback yet)");
+    } else {
+        // Normal threads are 0. RtAudio's WASAPI thread joins MMCSS as "Pro Audio",
+        // which should show here as a raised priority.
+        std::snprintf(text, sizeof text, "priority %d (normal threads: 0)", priority);
+        printField("Audio thread", text);
+    }
+    if (loadThreads > 0) {
+        std::snprintf(text, sizeof text, "%d busy threads at normal priority", loadThreads);
+        printField("Load", text);
+    }
 }
 
 void printKeys(bool showStats) {

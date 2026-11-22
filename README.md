@@ -1,15 +1,16 @@
 # Minerva
 
-A small real-time music studio for Windows, written in C++20: play melodies and
-chords on synthesized instruments from the computer keyboard, add drums, build songs
-from patterns and loops, and shape the sound with effects, live, into headphones.
+A small real-time synthesizer for Windows, written in C++20: play melodies and
+chords from the computer keyboard, through distortion and delay, live into
+headphones.
 
-The project focuses on real-time engineering: hard deadlines, sample-accurate timing,
-no allocation or locking on the audio thread, and measured latency.
+The project is about real-time engineering: a hard deadline every 2.67 ms, no
+allocation or locking on the audio thread, lock-free communication between
+threads, and measured timing, including under heavy CPU load.
 
-**Status:** early development. A 16-voice synth (built on DaisySP) plays from the
-computer keyboard through the master effect chain (distortion → delay); presets,
-drums, sequencer and looper are next.
+**Status:** a 16-voice synth (built on DaisySP) plays from the keyboard, every
+audio callback is measured, and a test proves the audio path never allocates. A
+GUI comes next.
 
 ## Requirements
 
@@ -92,6 +93,37 @@ Under CALLBACK TIMING it then adds one row per second:
 
 Turn the volume down before the first run.
 
+Options for measuring (all optional):
+
+| Option | What it does |
+|---|---|
+| `--stats` | show the callback timing table |
+| `--buffer FRAMES` | block size to ask the device for (default 128) |
+| `--load THREADS` | keep the CPU busy with that many threads at normal priority |
+| `--csv FILE` | write every callback's timing to a CSV file |
+| `--seconds N` | quit after N seconds, for unattended runs |
+
+At startup the AUDIO section shows the audio thread's priority. RtAudio's WASAPI
+thread joins MMCSS as "Pro Audio", and it shows as priority 15 (normal threads
+are 0).
+
+## Experiment: does it hold the deadline under load?
+
+`tools/buffer_experiment.py` runs the app for 128, 256 and 512-frame blocks, with
+no load and with one busy thread per CPU core, and charts late callbacks, the
+longest gap between callbacks, and the jitter at 128 frames. It needs Python with
+matplotlib (`python -m pip install matplotlib`):
+
+```
+python tools/buffer_experiment.py --seconds 30
+```
+
+Results go to `results/`. Why it stops at 128 frames: in WASAPI shared mode
+Windows mixes every 2.67 ms (128 frames at 48 kHz). Asking for a smaller block
+only makes RtAudio split each period into several back-to-back callbacks; the
+sound still leaves at the same pace, so latency does not drop. Going lower needs
+WASAPI exclusive mode.
+
 ## Test
 
 ```
@@ -105,4 +137,5 @@ core/       DSP and effects, portable C++ with no OS headers
 backends/   audio device I/O (currently RtAudio over WASAPI)
 apps/cli/   command-line app
 tests/      unit tests
+tools/      the buffer-size experiment script
 ```

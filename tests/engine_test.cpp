@@ -16,7 +16,7 @@ constexpr int kBlock = 128;
 // One audio block; returns its loudest sample.
 float block(minerva::Engine& engine) {
     std::vector<float> out(kBlock);
-    engine.process(nullptr, out.data(), kBlock);
+    engine.process(out.data(), kBlock);
     float loudest = 0.0f;
     for (float s : out) loudest = std::max(loudest, std::abs(s));
     return loudest;
@@ -104,8 +104,8 @@ TEST(Engine, AWaveformChangeThroughTheQueueChangesTheSound) {
     square.noteOn(69, 1.0f);
     std::vector<float> a(kBlock), b(kBlock);
     for (int i = 0; i < 4; ++i) { // past the attack
-        sine.process(nullptr, a.data(), kBlock);
-        square.process(nullptr, b.data(), kBlock);
+        sine.process(a.data(), kBlock);
+        square.process(b.data(), kBlock);
     }
     float difference = 0.0f;
     for (int i = 0; i < kBlock; ++i) difference = std::max(difference, std::abs(a[i] - b[i]));
@@ -136,7 +136,7 @@ TEST(Engine, ProcessNeverAllocatesOrFrees) {
             engine.delay().setTimeMs(100.0f + 50.0f * static_cast<float>((b / 300) % 10));
         }
         test::CountAllocations count;
-        engine.process(nullptr, out.data(), kBlock);
+        engine.process(out.data(), kBlock);
         allocations += count.allocations();
         frees += count.frees();
     }
