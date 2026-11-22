@@ -37,7 +37,7 @@ void Engine::apply(const Command& command) {
     }
 }
 
-void Engine::process(const float* /*in*/, float* out, int n) {
+void Engine::process(float* out, int n) {
     for (int i = 0; i < kMaxCommandsPerBlock; ++i) {
         const Command* command = commands_.front();
         if (command == nullptr) break;

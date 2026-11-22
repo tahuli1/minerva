@@ -15,9 +15,9 @@ class RtAudio;
 
 namespace minerva {
 
-// Mono in, mono out, n frames. Runs on the audio thread, so it must follow the RT rules.
-// A plain function pointer (not std::function) so calling it can never allocate.
-using ProcessFn = void (*)(const float* in, float* out, int n, void* user);
+// Fills n frames of mono output. Runs on the audio thread, so it must follow the RT
+// rules. A plain function pointer (not std::function) so calling it can never allocate.
+using ProcessFn = void (*)(float* out, int n, void* user);
 
 struct AudioConfig {
     unsigned int sampleRate = 48000;
@@ -36,9 +36,7 @@ struct StreamInfo {
 
 // Output-only audio stream on the default device via RtAudio (WASAPI). Processing is
 // mono and the result is copied to every output channel. The mic is not opened:
-// nothing uses it yet (it would come back with the looper, a bonus milestone), and
-// an open mic shows the Windows "microphone in use" icon. `in` is a block of
-// silence, so the process function never has to check.
+// nothing records, and an open mic shows the Windows "microphone in use" icon.
 class RtAudioBackend {
 public:
     RtAudioBackend();
@@ -78,7 +76,6 @@ private:
     ProcessFn process_ = nullptr;
     void* user_ = nullptr;
     std::vector<float> mono_;    // Sized in open(), never resized while running.
-    std::vector<float> silence_; // Passed as `in`, since there is no mic.
     unsigned int outChannels_ = 0;
 
     // About 11 s of 128-frame blocks at 48 kHz, so the main thread can stall for a

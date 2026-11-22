@@ -38,8 +38,8 @@ BOOL WINAPI onConsoleCtrl(DWORD type) {
 constexpr std::chrono::seconds kReportPeriod{1};
 
 // Audio thread. `user` is the engine.
-void runEngine(const float* in, float* out, int n, void* user) {
-    static_cast<minerva::Engine*>(user)->process(in, out, n);
+void runEngine(float* out, int n, void* user) {
+    static_cast<minerva::Engine*>(user)->process(out, n);
 }
 
 // Main thread, not RT. It sleeps until a key arrives, then turns it into commands
