@@ -1,15 +1,14 @@
-# Minerva — Real-Time Music Studio
+# Minerva — Real-Time Synth
 
 ## What this is
-A small real-time music studio for Windows, written in C++. You play melodies and chords
-on synthesized instruments from the computer keyboard, add drums, build songs from
-patterns and loops, and shape the sound with effects, live, into headphones. Not tied
-to one genre. The full spec and design are in `PLAN.html` (Hebrew), kept locally (not in the repo).
+A small real-time synthesizer for Windows, written in C++. You play melodies and chords
+from the computer keyboard, through effects, live into headphones. The full spec and
+design are in `PLAN.html` (Hebrew), kept locally (not in the repo).
 
-This is a **portfolio project for real-time (RT) developer job interviews**. The point is
-not just "it makes music" — it is to demonstrate real-time engineering: hard deadlines,
-determinism, sample-accurate timing, lock-free communication, and *measured*
-latency/jitter improvements.
+This is a **portfolio project for real-time (RT) developer job interviews**, kept small
+on purpose, and developed with AI assistance. The point is not just "it makes music" —
+it is to demonstrate real-time engineering: hard deadlines, determinism, lock-free
+communication, and *measured* timing and jitter, including under load.
 
 (Started as `ukefx`, an effects processor for a ukulele through a mic. Milestones 1–2
 were built under that name; the engine, effects and tooling carry over.)
@@ -35,18 +34,17 @@ were built under that name; the engine, effects and tooling carry over.)
 ```
 minerva/
   core/           # portable library. NO OS headers.
-    dsp/          #   building blocks: smoothing, oscillators, envelopes, filters
-    effects/      #   Effect interface, chain, set; one folder per effect
-    synth/        #   voice, voice pool, presets
-    drums/        #   drum voices
-    sequencer/    #   sample-based clock, patterns
-    rt/           #   lock-free SPSC queue
+    dsp/          #   building blocks: parameter smoothing
+    effects/      #   Effect interface and chain; one folder per effect
+    synth/        #   voice, voice pool (oscillator + envelope from DaisySP)
+    rt/           #   callback timing and its statistics
     engine/       #   owns everything above; one process() per audio block
-  backends/       # audio device I/O (rtaudio, later wasapi, asio, linux)
+  backends/       # audio device I/O (RtAudio over WASAPI)
   apps/
-    cli/          # keyboard input + text display
-    gui/          # later: ImGui front-end
-  tools/          # WAV I/O, offline render, latency measurement
+    cli/          # keyboard input + text display (keyboard/, display/, measurement/)
+    gui/          # Milestone 6: ImGui front-end
+  cmake/          # patches applied to fetched dependencies
+  tools/          # the buffer-size experiment script
   tests/
 ```
 
@@ -61,7 +59,7 @@ public:
 ```
 
 Threads: the audio thread (RT) and the control thread (keyboard, display) talk through
-SPSC queues — commands one way (note on/off, transport, edits), status and metrics the
+SPSC queues — commands one way (note on/off, waveform), callback timings the
 other — plus atomics for continuous parameters, smoothed on the audio thread.
 
 ## Real-time rules (non-negotiable)

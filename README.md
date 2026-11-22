@@ -1,15 +1,16 @@
 # Minerva
 
-A small real-time music studio for Windows, written in C++20: play melodies and
-chords on synthesized instruments from the computer keyboard, add drums, build songs
-from patterns and loops, and shape the sound with effects, live, into headphones.
+A small real-time synthesizer for Windows, written in C++20: play melodies and
+chords from the computer keyboard, through distortion and delay, live into
+headphones.
 
-The project focuses on real-time engineering: hard deadlines, sample-accurate timing,
-no allocation or locking on the audio thread, and measured latency.
+The project is about real-time engineering: a hard deadline every 2.67 ms, no
+allocation or locking on the audio thread, lock-free communication between
+threads, and measured timing, including under heavy CPU load.
 
-**Status:** early development. A 16-voice synth (built on DaisySP) plays from the
-computer keyboard through the master effect chain (distortion → delay); presets,
-drums, sequencer and looper are next.
+**Status:** a 16-voice synth (built on DaisySP) plays from the keyboard, every
+audio callback is measured, and a test proves the audio path never allocates. A
+GUI comes next.
 
 ## Requirements
 
