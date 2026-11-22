@@ -8,6 +8,8 @@
 
 #include <imgui.h>
 
+#include <span>
+
 namespace gui {
 
 // The window's sections, as in the mockup. Each draws itself for one frame;
@@ -28,5 +30,11 @@ Changed drawSoundPanel(app::Settings& settings, ImVec2 size);
 Changed drawEffectsPanel(app::Settings& settings, ImVec2 size);
 // The last second's callback timing.
 void drawEnginePanel(const Fonts& fonts, const minerva::TimingSummary& timing, ImVec2 size);
+
+// The current octave's C up to the next octave's F#: exactly the range the
+// computer keys play.
+// `held` counts, by note, what holds each note down. Returns the note the mouse
+// holds down, or -1.
+int drawKeysPanel(const app::Settings& settings, std::span<const int> held, ImVec2 size);
 
 } // namespace gui

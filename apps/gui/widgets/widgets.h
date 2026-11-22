@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 
+#include <span>
+
 namespace gui {
 
 // Controls ImGui doesn't have, drawn with its draw list in the mockup's style.
@@ -17,6 +19,12 @@ bool waveformPad(const char* id, const char* label, WaveShape shape, bool select
 
 // A rounded on/off switch with a text label.
 bool pillToggle(const char* id, const char* label, bool on);
+
+// A piano keyboard from `firstNote` (a C) for `labels.size()` notes. A key is lit
+// while held[note] > 0, and shows labels[i] (the computer key that plays it, or 0
+// for none). Returns the note under the mouse while the left button holds it down
+// on the keyboard, or -1.
+int pianoKeys(const char* id, int firstNote, std::span<const int> held, std::span<const char> labels, ImVec2 size);
 
 // A small card: a muted title over a large value.
 void statCard(const char* title, const char* value, ImU32 valueColor, ImVec2 size, ImFont* valueFont);

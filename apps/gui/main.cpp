@@ -10,6 +10,7 @@
 #include "theme/theme.h"
 #include "window/texture.h"
 
+#include <array>
 #include <chrono>
 
 #include <imgui.h>
@@ -29,15 +30,35 @@ struct App {
     gui::GraphicsWindow* window = nullptr;
     app::Settings settings;
     app::NoteKeys noteKeys;
+    // How many sources (computer keys, the mouse) hold each note down. The piano
+    // lights from this, never from the synth's voices, which belong to the audio
+    // thread.
+    std::array<int, 128> held{};
+    int mouseNote = -1; // the note the mouse holds, or -1
 };
 App* g_app = nullptr;
 
 // Audio thread. `user` is the engine.
 void runEngine(float* out, int n, void* user) { static_cast<minerva::Engine*>(user)->process(out, n); }
 
+// The synth's note-off releases every voice on the note, so the engine hears only
+// the first hold and the last release: one source letting go must not silence
+// the other. Returns false if the command queue was full and nothing started.
+bool startNote(App& a, int note) {
+    if (note < 0 || note >= static_cast<int>(a.held.size())) return false;
+    if (a.held[note] == 0 && !a.engine->noteOn(note, a.settings.velocity)) return false;
+    ++a.held[note];
+    return true;
+}
+
+void stopNote(App& a, int note) {
+    if (note < 0 || note >= static_cast<int>(a.held.size()) || a.held[note] == 0) return;
+    if (--a.held[note] == 0) a.engine->noteOff(note);
+}
+
 void keyDown(App& a, int key) {
     if (auto note = a.noteKeys.press(key, a.settings.octave)) {
-        a.engine->noteOn(*note, a.settings.velocity);
+        startNote(a, *note);
         return;
     }
     const minerva::Waveform waveform = a.settings.waveform;
@@ -47,7 +68,23 @@ void keyDown(App& a, int key) {
 }
 
 void keyUp(App& a, int key) {
-    if (auto note = a.noteKeys.release(key)) a.engine->noteOff(*note);
+    if (auto note = a.noteKeys.release(key)) stopNote(a, *note);
+}
+
+// Everything held stops, so no note is stuck when the key-ups go elsewhere.
+void releaseAll(App& a) {
+    for (int note : a.noteKeys.releaseAll()) stopNote(a, note);
+    stopNote(a, a.mouseNote);
+    a.mouseNote = -1;
+}
+
+// The mouse holds at most one note; sliding to another key moves the note there.
+void setMouseNote(App& a, int note) {
+    if (note == a.mouseNote) return;
+    stopNote(a, a.mouseNote);
+    a.mouseNote = -1;
+    // If the queue is full, the next frame tries again.
+    if (note >= 0 && startNote(a, note)) a.mouseNote = note;
 }
 
 LRESULT WINAPI wndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -63,8 +100,7 @@ LRESULT WINAPI wndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             keyUp(*g_app, static_cast<int>(wParam));
             return 0;
         case WM_KILLFOCUS:
-            // The key-ups now go to another window; stop every note so none is stuck.
-            for (int note : g_app->noteKeys.releaseAll()) g_app->engine->noteOff(note);
+            releaseAll(*g_app);
             return 0;
         case WM_SIZE:
             if (wParam != SIZE_MINIMIZED) g_app->window->resize(LOWORD(lParam), HIWORD(lParam));
@@ -104,9 +140,13 @@ void drawUi(App& a, const View& view, const minerva::RtAudioBackend& backend) {
     ImGui::SameLine(0, gap);
     gui::drawEnginePanel(view.fonts, view.timing, size);
 
+    ImGui::Dummy(ImVec2(0, gap - ImGui::GetStyle().ItemSpacing.y));
+    const int mouseNote = gui::drawKeysPanel(a.settings, a.held, ImVec2(ImGui::GetContentRegionAvail().x, 230));
+
     // A change made with the mouse reaches the engine the way a key press does.
     if (changed.waveform) a.engine->setWaveform(a.settings.waveform);
     if (changed.settings || effects.settings) app::apply(a.settings, *a.engine);
+    setMouseNote(a, mouseNote);
     ImGui::End();
 }
 

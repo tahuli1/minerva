@@ -175,4 +175,27 @@ void drawEnginePanel(const Fonts& fonts, const minerva::TimingSummary& timing, I
     endPanel();
 }
 
+int drawKeysPanel(const app::Settings& settings, std::span<const int> held, ImVec2 size) {
+    constexpr int kNotes = 19; // C up to the next octave's F#: what A to ' and ] play
+    beginPanel("keys", size);
+    sectionTitle("K E Y S");
+
+    // Label each key with the computer key that plays it, asking NoteKeys rather
+    // than repeating its layout here.
+    const int firstNote = (settings.octave + 1) * 12;
+    char labels[kNotes] = {};
+    auto label = [&](int key, char name) {
+        if (auto note = app::NoteKeys::noteFor(key, settings.octave); note && *note - firstNote < kNotes)
+            labels[*note - firstNote] = name;
+    };
+    for (char letter = 'A'; letter <= 'Z'; ++letter) label(letter, letter);
+    label(app::NoteKeys::kSemicolonKey, ';');
+    label(app::NoteKeys::kQuoteKey, '\'');
+    label(app::NoteKeys::kRightBracketKey, ']');
+
+    const int note = pianoKeys("##piano", firstNote, held, labels, ImGui::GetContentRegionAvail());
+    endPanel();
+    return note;
+}
+
 } // namespace gui
