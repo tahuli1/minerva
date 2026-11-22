@@ -48,7 +48,7 @@ public:
     // waveform directly while audio runs (a data race); it asks through the queue.
     bool setWaveform(Waveform waveform);
 
-    // Audio thread. `in` (the mic) is not used yet; it is for the looper (Milestone 8).
+    // Audio thread. `in` (the mic) is not used yet; it is for the looper (a bonus milestone).
     void process(const float* in, float* out, int n);
 
     Synth& synth() { return synth_; }
