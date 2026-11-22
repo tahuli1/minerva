@@ -2,16 +2,16 @@
 #define NOMINMAX
 #include <windows.h>
 
-#include "console_keyboard.h"
-#include "controls.h"
-#include "cpu_load.h"
-#include "display.h"
+#include "display/display.h"
 #include "engine/engine.h"
-#include "note_keys.h"
+#include "keyboard/console_keyboard.h"
+#include "keyboard/controls.h"
+#include "keyboard/note_keys.h"
+#include "measurement/cpu_load.h"
+#include "measurement/timing_csv.h"
 #include "options.h"
 #include "rt/timing_stats.h"
 #include "rtaudio/rtaudio_backend.h"
-#include "timing_csv.h"
 
 #include <atomic>
 #include <chrono>

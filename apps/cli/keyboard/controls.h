@@ -1,7 +1,7 @@
 #pragma once
 
 #include "engine/engine.h"
-#include "note_keys.h"
+#include "keyboard/note_keys.h"
 
 namespace cli {
 

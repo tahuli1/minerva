@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls.h"
+#include "keyboard/controls.h"
 #include "rt/timing_stats.h"
 #include "rtaudio/rtaudio_backend.h"
 

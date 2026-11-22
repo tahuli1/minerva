@@ -1,4 +1,4 @@
-#include "console_keyboard.h"
+#include "keyboard/console_keyboard.h"
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
