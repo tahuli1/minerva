@@ -7,8 +7,8 @@
 namespace app {
 
 // Turns computer keys into notes, like the "musical typing" keyboards of music apps:
-// the middle letter row is the white keys (A = C ... ; = E an octave up) and the
-// row above it the black keys (W = C# ... P = D#).
+// the middle letter row is the white keys (A = C ... ' = F an octave up) and the
+// row above it the black keys (W = C# ... ] = F#).
 //
 // Keys are Windows virtual key codes, which name the physical key in any keyboard
 // layout. They are plain numbers, so this class needs no Windows header and is
@@ -20,7 +20,10 @@ public:
     static constexpr int kMinOctave = 1;
     static constexpr int kMaxOctave = 7;
     static constexpr int kDefaultOctave = 4;   // A plays middle C (note 60)
-    static constexpr int kSemicolonKey = 0xBA; // VK_OEM_1, the ; key on a US layout
+    // Keys right of L and P, named by what they type on a US layout.
+    static constexpr int kSemicolonKey = 0xBA;    // VK_OEM_1, ;
+    static constexpr int kQuoteKey = 0xDE;        // VK_OEM_7, ' (types , on a Hebrew layout)
+    static constexpr int kRightBracketKey = 0xDD; // VK_OEM_6, ]
 
     // The note `key` plays in `octave`, or nothing if it is not a note key.
     static std::optional<int> noteFor(int key, int octave);

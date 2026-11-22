@@ -15,6 +15,7 @@ constexpr KeyNote kKeyNotes[] = {
     {'A', 0},  {'W', 1},  {'S', 2},  {'E', 3},  {'D', 4},  {'F', 5},
     {'T', 6},  {'G', 7},  {'Y', 8},  {'H', 9},  {'U', 10}, {'J', 11},
     {'K', 12}, {'O', 13}, {'L', 14}, {'P', 15}, {NoteKeys::kSemicolonKey, 16},
+    {NoteKeys::kQuoteKey, 17}, {NoteKeys::kRightBracketKey, 18},
 };
 
 } // namespace

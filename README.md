@@ -35,8 +35,8 @@ build\apps\cli\Release\minerva_cli.exe
 Play the synth from the computer keyboard, laid out like a piano:
 
 ```
- W E   T Y U   O P       black keys
-A S D F G H J K L ;      white keys: C D E F G A B C D E
+ W E   T Y U   O P   ]     black keys
+A S D F G H J K L ; '      white keys: C D E F G A B C D E F
 ```
 
 `A` is middle C. Hold several keys for a chord. The keys are read by position, so
