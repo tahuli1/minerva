@@ -95,6 +95,37 @@ FetchContent_MakeAvailable(spscqueue)
 add_library(spscqueue INTERFACE)
 target_include_directories(spscqueue SYSTEM INTERFACE ${spscqueue_SOURCE_DIR}/include)
 
+# Dear ImGui and ImPlot, for the GUI app. Neither ships a CMake build, so we build
+# their sources here: ImGui's core, its Win32 window and DirectX 11 drawing
+# backends, and ImPlot on top. Both are MIT.
+FetchContent_Declare(imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG        v1.91.5
+    GIT_SHALLOW    TRUE
+    SOURCE_SUBDIR  no-cmake)
+FetchContent_MakeAvailable(imgui)
+add_library(imgui STATIC
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_win32.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_dx11.cpp)
+target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
+target_link_libraries(imgui PUBLIC d3d11 d3dcompiler dxgi)
+
+FetchContent_Declare(implot
+    GIT_REPOSITORY https://github.com/epezent/implot.git
+    GIT_TAG        v0.16
+    GIT_SHALLOW    TRUE
+    SOURCE_SUBDIR  no-cmake)
+FetchContent_MakeAvailable(implot)
+add_library(implot STATIC
+    ${implot_SOURCE_DIR}/implot.cpp
+    ${implot_SOURCE_DIR}/implot_items.cpp)
+target_include_directories(implot SYSTEM PUBLIC ${implot_SOURCE_DIR})
+target_link_libraries(implot PUBLIC imgui)
+
 enable_testing()
 
 add_subdirectory(core)
