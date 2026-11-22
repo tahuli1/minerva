@@ -38,6 +38,6 @@ private:
 };
 
 // Rewrites the NOW line in place (no newline), so it stays the bottom line.
-void printSettings(const Settings& settings);
+void printSettings(const app::Settings& settings);
 
 } // namespace cli

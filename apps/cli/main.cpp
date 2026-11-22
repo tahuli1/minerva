@@ -48,11 +48,11 @@ void runEngine(float* out, int n, void* user) {
 // It also drains the callback timings, with or without --stats, so the audio
 // thread's work is the same either way; with --stats it adds a row to the table
 // once a second. With --seconds it stops by itself, for unattended runs.
-void runControlLoop(minerva::Engine& engine, cli::Settings& settings,
+void runControlLoop(minerva::Engine& engine, app::Settings& settings,
                     minerva::RtAudioBackend& backend, const cli::Options& options,
                     cli::TimingCsv& csv) {
     cli::ConsoleKeyboard keyboard;
-    cli::NoteKeys noteKeys;
+    app::NoteKeys noteKeys;
     minerva::TimingStats stats(backend.ticksPerSecond(), static_cast<int>(backend.info().sampleRate));
     cli::TimingTable table;
     const auto start = std::chrono::steady_clock::now();
@@ -71,9 +71,9 @@ void runControlLoop(minerva::Engine& engine, cli::Settings& settings,
                     engine.noteOn(*note, settings.velocity);
                 } else {
                     const minerva::Waveform waveform = settings.waveform;
-                    if (!cli::handleKey(e.key, settings)) break;
+                    if (!app::handleKey(e.key, settings)) break;
                     if (settings.waveform != waveform) engine.setWaveform(settings.waveform);
-                    cli::apply(settings, engine);
+                    app::apply(settings, engine);
                     cli::printSettings(settings);
                 }
                 break;
@@ -116,8 +116,8 @@ int main(int argc, char** argv) {
     SetConsoleCtrlHandler(onConsoleCtrl, TRUE);
 
     minerva::Engine engine;
-    cli::Settings settings;
-    cli::apply(settings, engine);       // Before prepare(), so the smoothers start at these values.
+    app::Settings settings;
+    app::apply(settings, engine);       // Before prepare(), so the smoothers start at these values.
     engine.setWaveform(settings.waveform);
     engine.distortion().setLevel(0.3f); // the overdrive peaks near full scale; keep headphones safe.
 

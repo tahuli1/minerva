@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-namespace cli {
+namespace app {
 
 // Turns computer keys into notes, like the "musical typing" keyboards of music apps:
 // the middle letter row is the white keys (A = C ... ; = E an octave up) and the
@@ -43,4 +43,4 @@ private:
     std::array<int, 256> heldNote_; // by virtual key code: the note it started
 };
 
-} // namespace cli
+} // namespace app

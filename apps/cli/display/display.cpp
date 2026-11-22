@@ -93,11 +93,11 @@ void TimingTable::printRow(const minerva::TimingSummary& s, std::uint64_t droppe
                 s.lateCallbacks, static_cast<unsigned long long>(droppedTimings));
 }
 
-void printSettings(const Settings& settings) {
+void printSettings(const app::Settings& settings) {
     clearLine();
     std::printf("NOW  octave %d | velocity %.1f | %s | distortion %s (drive %.2f) | "
                 "delay feedback %.2f, mix %.2f",
-                settings.octave, settings.velocity, waveformName(settings.waveform),
+                settings.octave, settings.velocity, app::waveformName(settings.waveform),
                 settings.distortion ? "on" : "off", settings.drive, settings.feedback, settings.mix);
     std::fflush(stdout);
 }

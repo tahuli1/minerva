@@ -1,6 +1,6 @@
 #include "keyboard/note_keys.h"
 
-namespace cli {
+namespace app {
 
 namespace {
 
@@ -53,4 +53,4 @@ std::vector<int> NoteKeys::releaseAll() {
     return notes;
 }
 
-} // namespace cli
+} // namespace app

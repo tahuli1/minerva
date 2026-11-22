@@ -130,5 +130,6 @@ enable_testing()
 
 add_subdirectory(core)
 add_subdirectory(backends)
+add_subdirectory(apps/common)
 add_subdirectory(apps/cli)
 add_subdirectory(tests)

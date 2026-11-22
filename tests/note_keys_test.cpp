@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <vector>
 
-using cli::NoteKeys;
+using app::NoteKeys;
 
 namespace {
 constexpr int kOctave = NoteKeys::kDefaultOctave;
