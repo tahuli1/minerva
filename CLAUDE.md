@@ -24,7 +24,7 @@ were built under that name; the engine, effects and tooling carry over.)
 - **Language:** C++20, MSVC, CMake.
 - **Audio I/O:** RtAudio (over WASAPI), output-only. The mic would only matter for the looper (a bonus milestone), so it is not opened. Bonus: our own WASAPI exclusive-mode backend, then ASIO.
 - **Input:** the computer keyboard (75%, no numpad), read by virtual key code with key-up events. No MIDI hardware for now.
-- **GUI (later stage):** Dear ImGui + ImPlot.
+- **GUI:** Dear ImGui + ImPlot over Direct3D 11 (Win32 backend).
 - **DSP:** DaisySP (oscillators, envelopes, filters, drums, effects): MIT, written for embedded, never allocates.
 - **Tests:** GoogleTest; effects and voices render into memory, so no sound card is needed (and CI can run them).
 - **CI:** GitHub Actions on Windows runners.
@@ -41,8 +41,9 @@ minerva/
     engine/       #   owns everything above; one process() per audio block
   backends/       # audio device I/O (RtAudio over WASAPI)
   apps/
-    cli/          # keyboard input + text display (keyboard/, display/, measurement/)
-    gui/          # Milestone 6: ImGui front-end
+    common/       # key layout and controls shared by both apps (keyboard/)
+    cli/          # console input + text display (keyboard/, display/, measurement/)
+    gui/          # ImGui window (window/, theme/, widgets/, panels/, plot/, assets/)
   cmake/          # patches applied to fetched dependencies
   tools/          # the buffer-size experiment script
   tests/
@@ -104,8 +105,8 @@ milestones (A–D) are optional: only if there is time, never a requirement for 
 2. **Effects:** ✅ distortion, delay, effect chain, parameter smoothing, offline WAV tool, CI.
 3. **Synth:** ✅ rename to Minerva, oscillators, ADSR, 16-voice pool, keyboard input (key down/up) through an SPSC command queue; runs without a mic (output-only stream when none is present).
 4. **Measurement:** ✅ callback timing vs. deadline through a lock-free queue, shown with `--stats`; late-callback detection from callback gaps; a test that fails if the callback allocates. *Bonus:* loopback latency tool, CPU cost vs. number of voices.
-5. **RT hardening:** does the audio thread hold its deadline under load, and what do bigger blocks buy? Measure callback timing and late callbacks for 128, 256 and 512-frame blocks, with no load and with heavy CPU load. 128 frames (2.67 ms) is the floor in WASAPI shared mode: Windows mixes on that period, and smaller requests only split each period into several back-to-back callbacks, without lowering latency (going lower needs exclusive mode, bonus D). RtAudio already puts its WASAPI thread under MMCSS ("Pro Audio"); the app checks and shows it. A CSV export of every callback and a plotting script show the results.
-6. **GUI:** Dear ImGui window: on-screen keyboard, waveform and effect parameters, and a live ImPlot graph of callback time vs. deadline with the late-callback count.
+5. **RT hardening:** ✅ does the audio thread hold its deadline under load, and what do bigger blocks buy? Measure callback timing and late callbacks for 128, 256 and 512-frame blocks, with no load and with heavy CPU load. 128 frames (2.67 ms) is the floor in WASAPI shared mode: Windows mixes on that period, and smaller requests only split each period into several back-to-back callbacks, without lowering latency (going lower needs exclusive mode, bonus D). RtAudio already puts its WASAPI thread under MMCSS ("Pro Audio"); the app checks and shows it. A CSV export of every callback and a plotting script show the results.
+6. **GUI:** ✅ Dear ImGui window: on-screen keyboard, waveform and effect parameters, and a live ImPlot graph of callback time vs. deadline with the late-callback count.
 7. **Polish:** README with the architecture, the before/after graphs, the bug found by stress testing and a "How this was built" note on AI-assisted development; a short demo video; public repository.
 
 Bonus milestones:
