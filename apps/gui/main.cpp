@@ -3,7 +3,14 @@
 #include "engine/engine.h"
 #include "keyboard/controls.h"
 #include "keyboard/note_keys.h"
+#include "panels/panels.h"
+#include "resource.h"
+#include "rt/timing_stats.h"
 #include "rtaudio/rtaudio_backend.h"
+#include "theme/theme.h"
+#include "window/texture.h"
+
+#include <chrono>
 
 #include <imgui.h>
 #include <imgui_impl_dx11.h>
@@ -71,24 +78,43 @@ LRESULT WINAPI wndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     return DefWindowProcW(hwnd, msg, wParam, lParam);
 }
 
-void drawUi(const App& a, const minerva::RtAudioBackend& backend) {
+// What the window shows besides the settings: drawn from, never written to the
+// audio side.
+struct View {
+    gui::Fonts fonts;
+    gui::Texture logo;
+    minerva::TimingSummary timing; // the last full second
+};
+
+void drawUi(App& a, const View& view, const minerva::RtAudioBackend& backend) {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
     ImGui::SetNextWindowSize(viewport->WorkSize);
     ImGui::Begin("Minerva", nullptr,
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::Text("MINERVA");
-    ImGui::Text("%u frames = %.2f ms, audio thread priority %d", backend.info().bufferFrames,
-                1000.0 * backend.info().bufferFrames / backend.info().sampleRate, backend.audioThreadPriority());
-    ImGui::Text("Play: A S D F G H J K L ;  (white keys)   W E T Y U O P  (black keys)");
-    ImGui::Text("octave %d | velocity %.1f | %s", a.settings.octave, a.settings.velocity,
-                app::waveformName(a.settings.waveform));
+    gui::drawHeader(view.fonts, view.logo, backend.info(), backend.audioThreadPriority());
+
+    // Three panels in a row, as in the mockup.
+    const float gap = 16;
+    const float width = (ImGui::GetContentRegionAvail().x - 2 * gap) / 3;
+    const ImVec2 size(width, 236);
+    gui::Changed changed = gui::drawSoundPanel(a.settings, size);
+    ImGui::SameLine(0, gap);
+    const gui::Changed effects = gui::drawEffectsPanel(a.settings, size);
+    ImGui::SameLine(0, gap);
+    gui::drawEnginePanel(view.fonts, view.timing, size);
+
+    // A change made with the mouse reaches the engine the way a key press does.
+    if (changed.waveform) a.engine->setWaveform(a.settings.waveform);
+    if (changed.settings || effects.settings) app::apply(a.settings, *a.engine);
     ImGui::End();
 }
 
 } // namespace
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
+    // COM, for WIC (the logo). Apartment-threaded: this is the window's thread.
+    CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     minerva::Engine engine;
     App a;
     a.engine = &engine;
@@ -119,6 +145,13 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
     ImGui_ImplWin32_Init(window.hwnd());
     ImGui_ImplDX11_Init(window.device(), window.context());
 
+    View view;
+    view.fonts = gui::applyTheme();
+    // WIC needs COM, initialized above.
+    view.logo = gui::loadPngResource(window.device(), IDR_LOGO, gui::kLogoSize, gui::kLogoSize);
+    minerva::TimingStats stats(backend.ticksPerSecond(), static_cast<int>(backend.info().sampleRate));
+    auto nextSummary = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+
     if (!backend.start()) {
         MessageBoxA(nullptr, backend.lastError().c_str(), "Minerva: cannot start audio", MB_ICONERROR);
         return 1;
@@ -138,15 +171,19 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         }
         if (!running) break;
 
-        // Drained every frame, so the queue never fills; the graphs will use them.
+        // Drained every frame, so the queue never fills; summarized once a second.
         minerva::CallbackTiming timing;
-        while (backend.popTiming(timing)) {
+        while (backend.popTiming(timing)) stats.add(timing);
+        if (std::chrono::steady_clock::now() >= nextSummary) {
+            view.timing = stats.summary();
+            stats.reset();
+            nextSummary += std::chrono::seconds(1);
         }
 
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
-        drawUi(a, backend);
+        drawUi(a, view, backend);
         ImGui::Render();
         window.beginFrame(background);
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -160,5 +197,6 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
     ImPlot::DestroyContext();
     ImGui::DestroyContext();
     window.destroy();
+    CoUninitialize();
     return 0;
 }
