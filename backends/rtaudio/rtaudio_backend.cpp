@@ -101,6 +101,9 @@ int RtAudioBackend::audioCallback(void* out, void* /*in*/, unsigned int nFrames,
     ScopedNoDenormals noDenormals;
 
     auto* backend = static_cast<RtAudioBackend*>(self);
+    // Once, on the first callback: one cheap, non-blocking query.
+    if (backend->audioThreadPriority_.load(std::memory_order_relaxed) == kPriorityUnknown)
+        backend->audioThreadPriority_.store(GetThreadPriority(GetCurrentThread()), std::memory_order_relaxed);
     auto* dst = static_cast<float*>(out);
     const unsigned int channels = backend->outChannels_;
 

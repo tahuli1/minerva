@@ -16,6 +16,10 @@ namespace cli {
 
 void printTitle();
 void printAudio(const minerva::StreamInfo& info);
+// The rest of AUDIO, once the stream runs: the audio thread's priority (from
+// GetThreadPriority, or RtAudioBackend::kPriorityUnknown) and the artificial load.
+void printAudioThread(int priority, int loadThreads);
+
 // `showStats`: whether the app was started with --stats, so the help can say how.
 void printKeys(bool showStats);
 

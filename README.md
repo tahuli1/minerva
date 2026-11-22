@@ -102,6 +102,10 @@ Options for measuring (all optional):
 | `--csv FILE` | write every callback's timing to a CSV file |
 | `--seconds N` | quit after N seconds, for unattended runs |
 
+At startup the AUDIO section shows the audio thread's priority. RtAudio's WASAPI
+thread joins MMCSS as "Pro Audio", and it shows as priority 15 (normal threads
+are 0).
+
 ## Test
 
 ```

@@ -64,6 +64,12 @@ public:
     // The rate of the clock the timings are in (QueryPerformanceFrequency).
     double ticksPerSecond() const { return ticksPerSecond_; }
 
+    // The audio thread's Windows priority (GetThreadPriority), read once on its
+    // first callback; kPriorityUnknown until then. Shows whether MMCSS, which
+    // RtAudio's WASAPI thread joins as "Pro Audio", really raised it.
+    static constexpr int kPriorityUnknown = -1000;
+    int audioThreadPriority() const { return audioThreadPriority_.load(std::memory_order_relaxed); }
+
 private:
     static int audioCallback(void* out, void* in, unsigned int nFrames, double streamTime,
                              unsigned int status, void* self);
@@ -81,6 +87,7 @@ private:
     rigtorp::SPSCQueue<CallbackTiming> timings_{kTimingCapacity};
     std::atomic<std::uint64_t> droppedTimings_{0};
     double ticksPerSecond_ = 0.0;
+    std::atomic<int> audioThreadPriority_{kPriorityUnknown};
     StreamInfo info_;
     std::string lastError_;
 

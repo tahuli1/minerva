@@ -150,6 +150,10 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "Failed to start audio stream: %s\n", backend.lastError().c_str());
         return 1;
     }
+    // The audio thread reads its priority on its first callback; wait for it, up to a second.
+    for (int i = 0; i < 50 && backend.audioThreadPriority() == minerva::RtAudioBackend::kPriorityUnknown; ++i)
+        Sleep(20);
+    cli::printAudioThread(backend.audioThreadPriority(), options.loadThreads);
     cli::printKeys(options.showStats);
 
     runControlLoop(engine, settings, backend, options, csv);
