@@ -121,9 +121,9 @@ int RtAudioBackend::audioCallback(void* out, void* /*in*/, unsigned int nFrames,
         for (unsigned int c = 0; c < channels; ++c)
             dst[i * channels + c] = mono[i];
 
-    const CallbackTiming timing{start, nowTicks() - start, nFrames};
-    if (!backend->timings_.try_push(timing))
-        backend->droppedTimings_.fetch_add(1, std::memory_order_relaxed);
+    const CallbackTiming timing{start, nowTicks() - start, nFrames, backend->lastTimingDropped_};
+    backend->lastTimingDropped_ = !backend->timings_.try_push(timing);
+    if (backend->lastTimingDropped_) backend->droppedTimings_.fetch_add(1, std::memory_order_relaxed);
     return 0;
 }
 

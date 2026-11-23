@@ -145,7 +145,7 @@ void drawUi(App& a, const View& view, const gui::TimingHistory& history, const m
     const int mouseNote = gui::drawKeysPanel(a.settings, a.held, ImVec2(ImGui::GetContentRegionAvail().x, 190));
     ImGui::Dummy(ImVec2(0, gap - ImGui::GetStyle().ItemSpacing.y));
     const minerva::StreamInfo& info = backend.info();
-    gui::drawTimingPanel(history, 1000.0 * info.bufferFrames / info.sampleRate, view.lateTotal,
+    gui::drawTimingPanel(history, 1000.0 * info.bufferFrames / info.sampleRate, view.lateTotal, backend.droppedTimings(),
                          ImGui::GetContentRegionAvail());
 
     // A change made with the mouse reaches the engine the way a key press does.

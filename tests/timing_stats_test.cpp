@@ -89,6 +89,17 @@ TEST(TimingStats, OneLongGapCountsOnce) {
     EXPECT_EQ(stats.summary().lateCallbacks, 1);
 }
 
+TEST(TimingStats, AGapAcrossDroppedTimingsIsNotLate) {
+    minerva::TimingStats stats(kTicksPerSecond, kSampleRate);
+    stats.add(timing(0, 100));
+    stats.add({50000, 100, kFrames, true}); // timings were lost, callbacks were not
+    EXPECT_EQ(stats.summary().lateCallbacks, 0);
+    EXPECT_DOUBLE_EQ(stats.summary().maxGapMs, 0.0);
+    stats.add(timing(60000, 100)); // measuring goes on from here: 10 ms is late
+    EXPECT_EQ(stats.summary().lateCallbacks, 1);
+    EXPECT_DOUBLE_EQ(stats.summary().maxGapMs, 10.0);
+}
+
 TEST(TimingStats, LatenessFollowsTheBlockSize) {
     // With 256-frame blocks (5333 us) a 4500 us gap is on time.
     minerva::TimingStats stats(kTicksPerSecond, kSampleRate);
