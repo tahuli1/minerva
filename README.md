@@ -246,3 +246,8 @@ docs/         images for this README
 I built Minerva with Claude Code, which wrote most of the code, tests and
 documentation. I set the direction and scope, made the design decisions, and
 tested it by playing. `CLAUDE.md` holds the rules it worked under.
+
+## License
+
+[MIT](LICENSE). The libraries CMake fetches have their own licenses. The logo is
+not covered by the MIT license.
