@@ -200,15 +200,20 @@ int drawKeysPanel(const app::Settings& settings, std::span<const int> held, ImVe
     return note;
 }
 
-void drawTimingPanel(const TimingHistory& history, double deadlineMs, int lateTotal, ImVec2 size) {
+void drawTimingPanel(const TimingHistory& history, double deadlineMs, int lateTotal, std::uint64_t dropped,
+                     ImVec2 size) {
     constexpr double kSeconds = 10.0;
     beginPanel("timing", size);
     sectionTitle("C A L L B A C K   T I M E");
 
-    char late[64];
-    std::snprintf(late, sizeof late, "late callbacks since start  %d", lateTotal);
+    char late[96];
+    if (dropped == 0)
+        std::snprintf(late, sizeof late, "late callbacks since start  %d", lateTotal);
+    else
+        std::snprintf(late, sizeof late, "timings dropped  %llu    late callbacks since start  %d",
+                      static_cast<unsigned long long>(dropped), lateTotal);
     ImGui::SameLine(ImGui::GetContentRegionMax().x - ImGui::CalcTextSize(late).x);
-    ImGui::PushStyleColor(ImGuiCol_Text, lateTotal == 0 ? color::kGreen : color::kOrange);
+    ImGui::PushStyleColor(ImGuiCol_Text, lateTotal == 0 && dropped == 0 ? color::kGreen : color::kOrange);
     ImGui::TextUnformatted(late);
     ImGui::PopStyleColor();
 

@@ -83,6 +83,7 @@ private:
     static constexpr std::size_t kTimingCapacity = 4096;
     rigtorp::SPSCQueue<CallbackTiming> timings_{kTimingCapacity};
     std::atomic<std::uint64_t> droppedTimings_{0};
+    bool lastTimingDropped_ = false; // audio thread only
     double ticksPerSecond_ = 0.0;
     std::atomic<int> audioThreadPriority_{kPriorityUnknown};
     StreamInfo info_;

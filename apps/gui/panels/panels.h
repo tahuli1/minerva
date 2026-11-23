@@ -9,6 +9,7 @@
 
 #include <imgui.h>
 
+#include <cstdint>
 #include <span>
 
 namespace gui {
@@ -39,7 +40,9 @@ void drawEnginePanel(const Fonts& fonts, const minerva::TimingSummary& timing, I
 int drawKeysPanel(const app::Settings& settings, std::span<const int> held, ImVec2 size);
 
 // The live graph: every callback of the last seconds against the deadline, and
-// the late callbacks counted since the start.
-void drawTimingPanel(const TimingHistory& history, double deadlineMs, int lateTotal, ImVec2 size);
+// the late callbacks counted since the start. `dropped` timings were lost because
+// the window stalled; shown when there are any, since lateness there is unknown.
+void drawTimingPanel(const TimingHistory& history, double deadlineMs, int lateTotal, std::uint64_t dropped,
+                     ImVec2 size);
 
 } // namespace gui

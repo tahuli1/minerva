@@ -9,7 +9,9 @@ TimingStats::TimingStats(double ticksPerSecond, int sampleRate)
     : ticksPerSecond_(ticksPerSecond), sampleRate_(sampleRate) {}
 
 void TimingStats::add(const CallbackTiming& timing) {
-    if (lastStart_ >= 0) {
+    // Across lost timings the gap covers callbacks that did run; counting it would
+    // report a late callback that never happened.
+    if (lastStart_ >= 0 && !timing.afterDrop) {
         const std::int64_t gap = timing.startTicks - lastStart_;
         maxGap_ = std::max(maxGap_, gap);
         // The block period in clock ticks follows the block size, so the threshold
