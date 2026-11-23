@@ -16,7 +16,7 @@ were built under that name; the engine, effects and tooling carry over.)
 ## Goals (definition of done)
 - Zero late callbacks in the load experiment (30 s per block size, with one busy thread per logical processor).
 - Measurements: per-callback processing time vs. deadline (histogram + live graph), late-callback count.
-- A README with before/after numbers for every RT improvement, and a demo video.
+- A README with the architecture and the measured results.
 - Bonus: round-trip latency under 10 ms, measured with a loopback tool.
 
 ## Platform & tech
@@ -106,7 +106,7 @@ milestones (A–D) are optional: only if there is time, never a requirement for 
 4. **Measurement:** ✅ callback timing vs. deadline through a lock-free queue, shown with `--stats`; late-callback detection from callback gaps; a test that fails if the callback allocates. *Bonus:* loopback latency tool, CPU cost vs. number of voices.
 5. **RT hardening:** ✅ does the audio thread hold its deadline under load, and what do bigger blocks buy? Measure callback timing and late callbacks for 128, 256 and 512-frame blocks, with no load and with heavy CPU load. 128 frames (2.67 ms) is the floor in WASAPI shared mode: Windows mixes on that period, and smaller requests only split each period into several back-to-back callbacks, without lowering latency (going lower needs exclusive mode, bonus D). RtAudio already puts its WASAPI thread under MMCSS ("Pro Audio"); the app checks and shows it. A CSV export of every callback and a plotting script show the results.
 6. **GUI:** ✅ Dear ImGui window: on-screen keyboard, waveform and effect parameters, and a live ImPlot graph of callback time vs. deadline with the late-callback count.
-7. **Polish:** README with the architecture, the before/after graphs, the bug found by stress testing and a "How this was built" note on AI-assisted development; a short demo video; public repository.
+7. **Polish:** README with the architecture, the load experiment, the bug found by playing it and a "How this was built" note on AI-assisted development; public repository.
 
 Bonus milestones:
 - **A. Sounds:** filter + filter envelope, presets (keys, pad, bass, lead, pluck), reverb.
