@@ -14,8 +14,8 @@ communication, and *measured* timing and jitter, including under load.
 were built under that name; the engine, effects and tooling carry over.)
 
 ## Goals (definition of done)
-- Zero xruns (buffer underruns/overruns) over an hour of playing, even with the system under load.
-- Measurements: per-callback processing time vs. deadline (histogram + live graph), xrun count.
+- Zero late callbacks over 10 minutes of playing, with the system under heavy CPU load.
+- Measurements: per-callback processing time vs. deadline (histogram + live graph), late-callback count.
 - A README with before/after numbers for every RT improvement, and a demo video.
 - Bonus: round-trip latency under 10 ms, measured with a loopback tool.
 
@@ -74,8 +74,7 @@ Inside the audio callback and anything it calls (`process()` etc.):
 - Timing comes from the sample counter, never from OS timers or `sleep`.
 - Voices, patterns, buffers and queues are sized before audio starts; per-block work has a fixed upper bound.
 
-Windows RT setup for the audio thread: MMCSS ("Pro Audio"), `VirtualLock` for audio memory,
-timing with `QueryPerformanceCounter`.
+Windows RT setup for the audio thread: MMCSS ("Pro Audio"), timing with `QueryPerformanceCounter`.
 
 If a change might violate these rules, stop and point it out instead of doing it.
 
