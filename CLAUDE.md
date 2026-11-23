@@ -14,7 +14,7 @@ communication, and *measured* timing and jitter, including under load.
 were built under that name; the engine, effects and tooling carry over.)
 
 ## Goals (definition of done)
-- Zero late callbacks over 10 minutes of playing, with the system under heavy CPU load.
+- Zero late callbacks in the load experiment (30 s per block size, with one busy thread per CPU core).
 - Measurements: per-callback processing time vs. deadline (histogram + live graph), late-callback count.
 - A README with before/after numbers for every RT improvement, and a demo video.
 - Bonus: round-trip latency under 10 ms, measured with a loopback tool.
