@@ -61,7 +61,7 @@ void printAudioThread(int priority, int loadThreads) {
 
 void printKeys(bool showStats) {
     printSection("KEYS");
-    printField("Play", "A S D F G H J K L ;  white keys    W E T Y U O P  black keys");
+    printField("Play", "A S D F G H J K L ; '  white keys    W E T Y U O P ]  black keys");
     printField("Sound", "Z/X octave    C/V velocity    1-4 waveform");
     printField("Effects", "F7 distortion on/off   F1/F2 drive   F3/F4 feedback   F5/F6 mix");
     printField("Quit", "Esc (or Ctrl+C)");
@@ -93,11 +93,11 @@ void TimingTable::printRow(const minerva::TimingSummary& s, std::uint64_t droppe
                 s.lateCallbacks, static_cast<unsigned long long>(droppedTimings));
 }
 
-void printSettings(const Settings& settings) {
+void printSettings(const app::Settings& settings) {
     clearLine();
     std::printf("NOW  octave %d | velocity %.1f | %s | distortion %s (drive %.2f) | "
                 "delay feedback %.2f, mix %.2f",
-                settings.octave, settings.velocity, waveformName(settings.waveform),
+                settings.octave, settings.velocity, app::waveformName(settings.waveform),
                 settings.distortion ? "on" : "off", settings.drive, settings.feedback, settings.mix);
     std::fflush(stdout);
 }

@@ -1,0 +1,4 @@
+// The logo is built into the exe, so the app is one file with nothing to copy beside it.
+#include "resource.h"
+
+IDR_LOGO RCDATA "assets/logo.png"

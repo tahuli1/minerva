@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <vector>
 
-using cli::NoteKeys;
+using app::NoteKeys;
 
 namespace {
 constexpr int kOctave = NoteKeys::kDefaultOctave;
@@ -17,17 +17,18 @@ TEST(NoteKeys, TheHomeRowIsTheWhiteKeysFromMiddleC) {
     EXPECT_EQ(NoteKeys::noteFor('F', kOctave), 65); // F: no black key between E and F
     EXPECT_EQ(NoteKeys::noteFor('K', kOctave), 72); // C an octave up
     EXPECT_EQ(NoteKeys::noteFor(NoteKeys::kSemicolonKey, kOctave), 76); // E
+    EXPECT_EQ(NoteKeys::noteFor(NoteKeys::kQuoteKey, kOctave), 77);     // F
 }
 
 TEST(NoteKeys, TheRowAboveIsTheBlackKeys) {
     EXPECT_EQ(NoteKeys::noteFor('W', kOctave), 61); // C#
     EXPECT_EQ(NoteKeys::noteFor('T', kOctave), 66); // F#
     EXPECT_EQ(NoteKeys::noteFor('P', kOctave), 75); // D# an octave up
+    EXPECT_EQ(NoteKeys::noteFor(NoteKeys::kRightBracketKey, kOctave), 78); // F# an octave up
 }
 
 TEST(NoteKeys, OtherKeysPlayNothing) {
-    EXPECT_FALSE(NoteKeys::noteFor('R', kOctave)); // the gap between E and F
-    EXPECT_FALSE(NoteKeys::noteFor('Z', kOctave));
+    EXPECT_FALSE(NoteKeys::noteFor('R', kOctave)); // the gap between E and F    EXPECT_FALSE(NoteKeys::noteFor('Z', kOctave));
     EXPECT_FALSE(NoteKeys::noteFor('1', kOctave));
 }
 

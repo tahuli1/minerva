@@ -15,7 +15,7 @@ add_executable(minerva_tests
     voice_test.cpp)
 # denormals.h lives with the backends (it is x86-specific), so its folder is added here.
 target_include_directories(minerva_tests PRIVATE ${PROJECT_SOURCE_DIR}/backends)
-target_link_libraries(minerva_tests PRIVATE minerva_core minerva_cli_logic GTest::gtest_main
+target_link_libraries(minerva_tests PRIVATE minerva_core minerva_app_common minerva_cli_logic GTest::gtest_main
                                             minerva_warnings)
 
 include(GoogleTest)

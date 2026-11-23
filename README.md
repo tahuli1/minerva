@@ -8,16 +8,17 @@ The project is about real-time engineering: a hard deadline every 2.67 ms, no
 allocation or locking on the audio thread, lock-free communication between
 threads, and measured timing, including under heavy CPU load.
 
-**Status:** a 16-voice synth (built on DaisySP) plays from the keyboard, every
-audio callback is measured, and a test proves the audio path never allocates. A
-GUI comes next.
+**Status:** a 16-voice synth (built on DaisySP) plays from the keyboard, in a
+window or in a console. Every audio callback is measured and drawn live against
+its deadline, and a test proves the audio path never allocates.
 
 ## Requirements
 
 - Windows 10/11
 - Visual Studio 2022 or newer with the C++ workload
 - CMake 3.24+
-- Git (CMake fetches RtAudio, GoogleTest and DaisySP on first configure)
+- Git (CMake fetches RtAudio, DaisySP, Dear ImGui, ImPlot and GoogleTest on
+  first configure)
 
 ## Build
 
@@ -28,23 +29,50 @@ cmake --build build --config Release
 
 ## Run
 
+Turn the volume down before the first run. There are two apps, which play the
+same synth from the same keys.
+
+### The window
+
+```
+build\apps\gui\Release\minerva_gui.exe
+```
+
+- **SOUND:** the waveform, the octave and the velocity.
+- **EFFECTS:** distortion on/off and three knobs (drive, delay feedback, delay
+  mix). Turn a knob by circling the mouse around it, clockwise for more.
+- **ENGINE:** the last second's callback timing: the slowest callback, the share
+  of the deadline it used, the longest gap between callbacks, and late callbacks.
+- **KEYS:** the notes the computer keys play, each labelled with its key. They
+  light up while held, and the mouse plays them too.
+- **CALLBACK TIME:** every callback of the last ten seconds against the deadline,
+  on a logarithmic axis (a callback takes microseconds, the deadline is
+  milliseconds), and the late callbacks since the start.
+
+The keys light from what the window itself sent to the audio thread, never from
+the synth's state, which only the audio thread may touch.
+
+### The console
+
 ```
 build\apps\cli\Release\minerva_cli.exe
 ```
 
-Play the synth from the computer keyboard, laid out like a piano:
+### Keys
+
+Both apps play the synth from the computer keyboard, laid out like a piano:
 
 ```
- W E   T Y U   O P       black keys
-A S D F G H J K L ;      white keys: C D E F G A B C D E
+ W E   T Y U   O P   ]     black keys
+A S D F G H J K L ; '      white keys: C D E F G A B C D E F
 ```
 
 `A` is middle C. Hold several keys for a chord. The keys are read by position, so
 they work whatever the keyboard language is.
 
-Run it in a console window (cmd, PowerShell or Windows Terminal). Terminals
-embedded in editors, such as VS Code's, pass on characters rather than keys, so
-key releases never arrive and notes don't play properly.
+Run the console app in a console window (cmd, PowerShell or Windows Terminal).
+Terminals embedded in editors, such as VS Code's, pass on characters rather than
+keys, so key releases never arrive and notes don't play properly.
 
 | Key | Action |
 |---|---|
@@ -55,15 +83,17 @@ key releases never arrive and notes don't play properly.
 | `F1` / `F2` | distortion drive down / up |
 | `F3` / `F4` | delay feedback down / up |
 | `F5` / `F6` | delay mix down / up |
-| `Esc` | quit (Ctrl+C works too) |
+| `Esc` | quit the console app (Ctrl+C works too); the window closes as usual |
 
 On some keyboards the F keys need the `Fn` key. Effect changes glide over 20 ms, so
 they don't click.
 
 Minerva only plays: it opens the speakers or headphones, never the microphone.
 
-Every audio callback is timed. To see the measurements, start the app with
-`--stats`:
+### Measuring in the console
+
+Every audio callback is timed. To see the measurements, start the console app
+with `--stats`:
 
 ```
 build\apps\cli\Release\minerva_cli.exe --stats
@@ -90,8 +120,6 @@ Under CALLBACK TIMING it then adds one row per second:
   its output ran dry, so this is the only warning there is.
 - `dropped`: timings lost because the display fell behind (the audio thread never
   waits for it).
-
-Turn the volume down before the first run.
 
 Options for measuring (all optional):
 
@@ -133,9 +161,12 @@ ctest --test-dir build -C Release
 ## Layout
 
 ```
-core/       DSP and effects, portable C++ with no OS headers
-backends/   audio device I/O (currently RtAudio over WASAPI)
-apps/cli/   command-line app
-tests/      unit tests
-tools/      the buffer-size experiment script
+core/         DSP, effects, synth and timing, portable C++ with no OS headers
+backends/     audio device I/O (currently RtAudio over WASAPI)
+apps/common/  the key layout and controls both apps share
+apps/gui/     the window: Dear ImGui and ImPlot over Direct3D 11
+apps/cli/     the console app, with the measurement options
+cmake/        patches applied to fetched dependencies
+tests/        unit tests
+tools/        the buffer-size experiment script
 ```

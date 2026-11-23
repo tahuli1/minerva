@@ -3,7 +3,7 @@
 #include "engine/engine.h"
 #include "keyboard/note_keys.h"
 
-namespace cli {
+namespace app {
 
 // The values the user controls from the keyboard. Owned by the main thread, which
 // pushes them into the engine: effect parameters through their atomic setters, the
@@ -31,4 +31,4 @@ bool handleKey(int key, Settings& settings);
 
 const char* waveformName(minerva::Waveform waveform);
 
-} // namespace cli
+} // namespace app

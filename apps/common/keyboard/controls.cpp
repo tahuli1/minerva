@@ -1,14 +1,14 @@
 #include "keyboard/controls.h"
 
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
-
 #include <algorithm>
 
-namespace cli {
+namespace app {
 
 namespace {
+
+// Windows virtual key codes of F1..F7 (VK_F1 is 0x70), written out so this file
+// needs no Windows header and builds into the shared, tested library.
+constexpr int kF1 = 0x70, kF2 = 0x71, kF3 = 0x72, kF4 = 0x73, kF5 = 0x74, kF6 = 0x75, kF7 = 0x76;
 
 constexpr float kVelocityStep = 0.1f;
 constexpr float kMinVelocity = 0.1f; // quieter than this is hard to hear at all
@@ -44,15 +44,15 @@ bool handleKey(int key, Settings& settings) {
     case '2': settings.waveform = Waveform::Triangle; return true;
     case '3': settings.waveform = Waveform::Saw; return true;
     case '4': settings.waveform = Waveform::Square; return true;
-    case VK_F1: settings.drive = std::max(Distortion::kMinDrive, settings.drive - 0.05f); return true;
-    case VK_F2: settings.drive = std::min(Distortion::kMaxDrive, settings.drive + 0.05f); return true;
-    case VK_F3: settings.feedback = std::max(0.0f, settings.feedback - 0.05f); return true;
-    case VK_F4: settings.feedback = std::min(0.95f, settings.feedback + 0.05f); return true;
-    case VK_F5: settings.mix = std::max(0.0f, settings.mix - 0.05f); return true;
-    case VK_F6: settings.mix = std::min(1.0f, settings.mix + 0.05f); return true;
-    case VK_F7: settings.distortion = !settings.distortion; return true;
+    case kF1: settings.drive = std::max(Distortion::kMinDrive, settings.drive - 0.05f); return true;
+    case kF2: settings.drive = std::min(Distortion::kMaxDrive, settings.drive + 0.05f); return true;
+    case kF3: settings.feedback = std::max(0.0f, settings.feedback - 0.05f); return true;
+    case kF4: settings.feedback = std::min(0.95f, settings.feedback + 0.05f); return true;
+    case kF5: settings.mix = std::max(0.0f, settings.mix - 0.05f); return true;
+    case kF6: settings.mix = std::min(1.0f, settings.mix + 0.05f); return true;
+    case kF7: settings.distortion = !settings.distortion; return true;
     default: return false;
     }
 }
 
-} // namespace cli
+} // namespace app
